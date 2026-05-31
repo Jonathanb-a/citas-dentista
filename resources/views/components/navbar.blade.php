@@ -21,7 +21,7 @@
             </div>
 
             {{-- Boton Registrate desktop --}}
-            <a href="/register"
+            <a href="/login"
                class="hidden md:flex items-center justify-center border border-[#2c2c2c] text-[#2c2c2c] text-sm lg:text-base font-medium px-5 py-2 rounded-md hover:bg-[#f285a2] hover:text-white hover:border-[#f285a2] transition-all duration-300">
                 REGÍSTRATE
             </a>
