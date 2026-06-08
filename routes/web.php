@@ -3,6 +3,7 @@
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\Auth\RegisterController;
+use App\Http\Controllers\Admin\DashboardController;
 
 // Página principal
 Route::get('/', function () {
@@ -22,9 +23,7 @@ Route::post('/register', [RegisterController::class, 'register']);
 
 // Rutas Admin — solo doctora
 Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->group(function () {
-    Route::get('/dashboard', function () {
-        return 'Dashboard Admin — En construcción';
-    })->name('dashboard');
+    Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
 });
 
 // Rutas Asistente — solo asistente
