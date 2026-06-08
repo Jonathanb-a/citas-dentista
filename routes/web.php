@@ -11,26 +11,32 @@ Route::get('/', function () {
 
 // Autenticación
 Route::get('/login', [LoginController::class, 'show'])->name('login');
-Route::post('/login', [LoginController::class, 'login']);
+Route::middleware(['throttle:5,1'])->group(function () {
+    Route::post('/login', [LoginController::class, 'login']);
+});
 Route::post('/logout', [LoginController::class, 'logout'])->name('logout');
 
 // Registro
 Route::get('/register', [RegisterController::class, 'show'])->name('register');
 Route::post('/register', [RegisterController::class, 'register']);
 
-// Dashboard Admin
-Route::middleware(['auth'])->group(function () {
-
-    Route::get('/admin/dashboard', function () {
+// Rutas Admin — solo doctora
+Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->group(function () {
+    Route::get('/dashboard', function () {
         return 'Dashboard Admin — En construcción';
-    })->name('admin.dashboard');
+    })->name('dashboard');
+});
 
-    Route::get('/asistente/dashboard', function () {
+// Rutas Asistente — solo asistente
+Route::middleware(['auth', 'role:asistente'])->prefix('asistente')->name('asistente.')->group(function () {
+    Route::get('/dashboard', function () {
         return 'Dashboard Asistente — En construcción';
-    })->name('asistente.dashboard');
+    })->name('dashboard');
+});
 
-    Route::get('/paciente/dashboard', function () {
+// Rutas Paciente — solo paciente
+Route::middleware(['auth', 'role:paciente'])->prefix('paciente')->name('paciente.')->group(function () {
+    Route::get('/dashboard', function () {
         return 'Dashboard Paciente — En construcción';
-    })->name('paciente.dashboard');
-
+    })->name('dashboard');
 });
