@@ -1,5 +1,4 @@
-<div>
-    <!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="es">
 <head>
     <meta charset="UTF-8">
@@ -37,21 +36,53 @@
                 </p>
             </div>
 
+            {{-- Errores generales --}}
+            @if ($errors->any())
+                <div class="bg-red-50 border border-red-200 rounded-xl px-4 py-3">
+                    <ul class="list-none flex flex-col gap-1">
+                        @foreach ($errors->all() as $error)
+                            <li class="text-red-500 text-xs" style="font-family: 'Montserrat', sans-serif;">• {{ $error }}</li>
+                        @endforeach
+                    </ul>
+                </div>
+            @endif
+
             {{-- Formulario --}}
             <form method="POST" action="/register" class="flex flex-col gap-4">
                 @csrf
 
-                {{-- Nombre completo --}}
+                {{-- Nombre --}}
                 <div class="flex flex-col gap-1.5">
                     <label class="text-gray-600 text-sm font-medium"
                            style="font-family: 'Montserrat', sans-serif;">
-                        Nombre completo
+                        Nombre
                     </label>
                     <input type="text"
                            name="name"
-                           placeholder="María García"
-                           class="w-full px-4 py-3 rounded-xl border border-gray-200 text-sm text-gray-700 focus:outline-none focus:border-[#d75078] focus:ring-2 focus:ring-[#fde7ed] transition-all duration-300"
+                           value="{{ old('name') }}"
+                           placeholder="María"
+                           class="w-full px-4 py-3 rounded-xl border {{ $errors->has('name') ? 'border-red-400' : 'border-gray-200' }} text-sm text-gray-700 focus:outline-none focus:border-[#d75078] focus:ring-2 focus:ring-[#fde7ed] transition-all duration-300"
                            style="font-family: 'Montserrat', sans-serif;">
+                    @error('name')
+                        <span class="text-red-500 text-xs">{{ $message }}</span>
+                    @enderror
+                </div>
+
+                {{-- Apellidos --}}
+                <div class="flex flex-col gap-1.5">
+                    <label class="text-gray-600 text-sm font-medium"
+                           style="font-family: 'Montserrat', sans-serif;">
+                        Apellidos
+                    </label>
+                    <input type="text"
+                           name="apellidos"
+                           value="{{ old('apellidos') }}"
+                           placeholder="García López"
+                           class="w-full px-4 py-3 rounded-xl border {{ $errors->has('apellidos') ? 'border-red-400' : 'border-gray-200' }} text-sm text-gray-700 focus:outline-none focus:border-[#d75078] focus:ring-2 focus:ring-[#fde7ed] transition-all duration-300"
+                           style="font-family: 'Montserrat', sans-serif;">
+                    @error('apellidos')
+                        <span class="text-red-500 text-xs">{{ $message }}</span>
+                    @enderror
                 </div>
 
                 {{-- Email --}}
@@ -62,9 +93,13 @@
                     </label>
                     <input type="email"
                            name="email"
+                           value="{{ old('email') }}"
                            placeholder="tucorreo@gmail.com"
-                           class="w-full px-4 py-3 rounded-xl border border-gray-200 text-sm text-gray-700 focus:outline-none focus:border-[#d75078] focus:ring-2 focus:ring-[#fde7ed] transition-all duration-300"
+                           class="w-full px-4 py-3 rounded-xl border {{ $errors->has('email') ? 'border-red-400' : 'border-gray-200' }} text-sm text-gray-700 focus:outline-none focus:border-[#d75078] focus:ring-2 focus:ring-[#fde7ed] transition-all duration-300"
                            style="font-family: 'Montserrat', sans-serif;">
+                    @error('email')
+                        <span class="text-red-500 text-xs">{{ $message }}</span>
+                    @enderror
                 </div>
 
                 {{-- Telefono --}}
@@ -74,10 +109,14 @@
                         Número de teléfono
                     </label>
                     <input type="tel"
-                           name="phone"
+                           name="telefono"
+                           value="{{ old('telefono') }}"
                            placeholder="+52 999 123 1234"
-                           class="w-full px-4 py-3 rounded-xl border border-gray-200 text-sm text-gray-700 focus:outline-none focus:border-[#d75078] focus:ring-2 focus:ring-[#fde7ed] transition-all duration-300"
+                           class="w-full px-4 py-3 rounded-xl border {{ $errors->has('telefono') ? 'border-red-400' : 'border-gray-200' }} text-sm text-gray-700 focus:outline-none focus:border-[#d75078] focus:ring-2 focus:ring-[#fde7ed] transition-all duration-300"
                            style="font-family: 'Montserrat', sans-serif;">
+                    @error('telefono')
+                        <span class="text-red-500 text-xs">{{ $message }}</span>
+                    @enderror
                 </div>
 
                 {{-- Contraseña --}}
@@ -89,8 +128,11 @@
                     <input type="password"
                            name="password"
                            placeholder="••••••••"
-                           class="w-full px-4 py-3 rounded-xl border border-gray-200 text-sm text-gray-700 focus:outline-none focus:border-[#d75078] focus:ring-2 focus:ring-[#fde7ed] transition-all duration-300"
+                           class="w-full px-4 py-3 rounded-xl border {{ $errors->has('password') ? 'border-red-400' : 'border-gray-200' }} text-sm text-gray-700 focus:outline-none focus:border-[#d75078] focus:ring-2 focus:ring-[#fde7ed] transition-all duration-300"
                            style="font-family: 'Montserrat', sans-serif;">
+                    @error('password')
+                        <span class="text-red-500 text-xs">{{ $message }}</span>
+                    @enderror
                 </div>
 
                 {{-- Confirmar Contraseña --}}
@@ -179,4 +221,3 @@
 
 </body>
 </html>
-</div>

@@ -2,48 +2,65 @@
 
 namespace App\Models;
 
-// use Illuminate\Contracts\Auth\MustVerifyEmail;
-use Database\Factories\UserFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 
 class User extends Authenticatable
 {
-    /** @use HasFactory<UserFactory> */
     use HasFactory, Notifiable;
 
-    /**
-     * The attributes that are mass assignable.
-     *
-     * @var list<string>
-     */
     protected $fillable = [
         'name',
+        'apellidos',
         'email',
+        'telefono',
+        'fecha_nacimiento',
+        'sexo',
+        'role',
+        'activo',
         'password',
     ];
 
-    /**
-     * The attributes that should be hidden for serialization.
-     *
-     * @var list<string>
-     */
     protected $hidden = [
         'password',
         'remember_token',
     ];
 
-    /**
-     * Get the attributes that should be cast.
-     *
-     * @return array<string, string>
-     */
     protected function casts(): array
     {
         return [
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
+            'fecha_nacimiento' => 'date',
+            'activo' => 'boolean',
         ];
+    }
+
+    // Relaciones
+    public function citas()
+    {
+        return $this->hasMany(Cita::class, 'paciente_id');
+    }
+
+    public function expediente()
+    {
+        return $this->hasOne(Expediente::class, 'paciente_id');
+    }
+
+    // Helpers de roles
+    public function esAdmin()
+    {
+        return $this->role === 'admin';
+    }
+
+    public function esAsistente()
+    {
+        return $this->role === 'asistente';
+    }
+
+    public function esPaciente()
+    {
+        return $this->role === 'paciente';
     }
 }
