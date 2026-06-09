@@ -6,6 +6,7 @@ use App\Http\Controllers\Auth\RegisterController;
 use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\Admin\EspecialidadController;
 use App\Http\Controllers\Admin\ServicioController;
+use App\Http\Controllers\Admin\HorarioController;
 
 // Página principal
 Route::get('/', function () {
@@ -40,7 +41,14 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->grou
     Route::put('/servicios/{id}', [ServicioController::class, 'update'])->name('servicios.update');
     Route::patch('/servicios/{id}/toggle', [ServicioController::class, 'toggle'])->name('servicios.toggle');
     Route::delete('/servicios/{id}', [ServicioController::class, 'destroy'])->name('servicios.destroy');
+
+    // Horarios
+    Route::get('/horarios', [HorarioController::class, 'index'])->name('horarios.index');
+    Route::post('/horarios', [HorarioController::class, 'store'])->name('horarios.store');
+    Route::patch('/horarios/{id}/toggle', [HorarioController::class, 'toggle'])->name('horarios.toggle');
+    Route::delete('/horarios/{id}', [HorarioController::class, 'destroy'])->name('horarios.destroy');
 });
+
 // Rutas Asistente — solo asistente
 Route::middleware(['auth', 'role:asistente'])->prefix('asistente')->name('asistente.')->group(function () {
     Route::get('/dashboard', function () {
