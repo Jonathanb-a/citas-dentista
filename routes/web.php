@@ -4,6 +4,8 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\Auth\RegisterController;
 use App\Http\Controllers\Admin\DashboardController;
+use App\Http\Controllers\Admin\EspecialidadController;
+use App\Http\Controllers\Admin\ServicioController;
 
 // Página principal
 Route::get('/', function () {
@@ -24,8 +26,21 @@ Route::post('/register', [RegisterController::class, 'register']);
 // Rutas Admin — solo doctora
 Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->group(function () {
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
-});
 
+    // Especialidades
+    Route::get('/especialidades', [EspecialidadController::class, 'index'])->name('especialidades.index');
+    Route::post('/especialidades', [EspecialidadController::class, 'store'])->name('especialidades.store');
+    Route::put('/especialidades/{id}', [EspecialidadController::class, 'update'])->name('especialidades.update');
+    Route::patch('/especialidades/{id}/toggle', [EspecialidadController::class, 'toggle'])->name('especialidades.toggle');
+    Route::delete('/especialidades/{id}', [EspecialidadController::class, 'destroy'])->name('especialidades.destroy');
+
+    // Servicios
+    Route::get('/servicios', [ServicioController::class, 'index'])->name('servicios.index');
+    Route::post('/servicios', [ServicioController::class, 'store'])->name('servicios.store');
+    Route::put('/servicios/{id}', [ServicioController::class, 'update'])->name('servicios.update');
+    Route::patch('/servicios/{id}/toggle', [ServicioController::class, 'toggle'])->name('servicios.toggle');
+    Route::delete('/servicios/{id}', [ServicioController::class, 'destroy'])->name('servicios.destroy');
+});
 // Rutas Asistente — solo asistente
 Route::middleware(['auth', 'role:asistente'])->prefix('asistente')->name('asistente.')->group(function () {
     Route::get('/dashboard', function () {
