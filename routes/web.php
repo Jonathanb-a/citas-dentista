@@ -7,7 +7,7 @@ use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\Admin\EspecialidadController;
 use App\Http\Controllers\Admin\ServicioController;
 use App\Http\Controllers\Admin\HorarioController;
-
+use App\Http\Controllers\Paciente\CitaController;
 // Página principal
 Route::get('/', function () {
     return view('welcome');
@@ -59,6 +59,13 @@ Route::middleware(['auth', 'role:asistente'])->prefix('asistente')->name('asiste
 // Rutas Paciente — solo paciente
 Route::middleware(['auth', 'role:paciente'])->prefix('paciente')->name('paciente.')->group(function () {
     Route::get('/dashboard', function () {
-        return 'Dashboard Paciente — En construcción';
+        return redirect()->route('paciente.citas.index');
     })->name('dashboard');
+
+    // Citas
+    Route::get('/citas', [CitaController::class, 'index'])->name('citas.index');
+    Route::get('/citas/agendar', [CitaController::class, 'create'])->name('citas.create');
+    Route::post('/citas/disponibilidad', [CitaController::class, 'disponibilidad'])->name('citas.disponibilidad');
+    Route::post('/citas', [CitaController::class, 'store'])->name('citas.store');
+    Route::patch('/citas/{id}/cancelar', [CitaController::class, 'cancelar'])->name('citas.cancelar');
 });
