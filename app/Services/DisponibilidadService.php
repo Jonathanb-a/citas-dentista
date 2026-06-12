@@ -41,13 +41,16 @@ class DisponibilidadService
         }
 
         // Obtener las citas ya agendadas ese día (que no estén canceladas)
-        $citasOcupadas = Cita::whereDate('fecha', $fecha)
+        // con su duración para calcular el rango ocupado completo
+        $citasOcupadas = Cita::with('servicio')
+            ->whereDate('fecha', $fecha)
             ->whereNotIn('status', ['cancelada'])
             ->get()
-            ->map(function ($cita) {
-                return Carbon::parse($cita->hora)->format('H:i');
-            })
-            ->toArray();
+            ->map(function ($cita) use ($fecha) {
+                $inicio = Carbon::parse($fecha . ' ' . $cita->hora);
+                $fin = $inicio->copy()->addMinutes($cita->servicio->duracion_minutos);
+                return ['inicio' => $inicio, 'fin' => $fin];
+            });
 
         $espacios = [];
 
@@ -59,20 +62,27 @@ class DisponibilidadService
             $actual = $inicio->copy();
 
             while ($actual->copy()->addMinutes($duracion) <= $fin) {
-                $horaEspacio = $actual->format('H:i');
+                $espacioInicio = $actual->copy();
+                $espacioFin = $actual->copy()->addMinutes($duracion);
 
-                // Si no está ocupado y no es una hora pasada, agregarlo
+                // Verificar si este espacio choca con alguna cita ocupada
+                $hayChoque = $citasOcupadas->contains(function ($ocupada) use ($espacioInicio, $espacioFin) {
+                    // Dos rangos se solapan si: inicioA < finB Y finA > inicioB
+                    return $espacioInicio->lt($ocupada['fin']) && $espacioFin->gt($ocupada['inicio']);
+                });
+
+                // Verificar si es una hora pasada
                 $esPasado = $fechaCarbon->isToday() && $actual->lt(Carbon::now());
 
-                if (!in_array($horaEspacio, $citasOcupadas) && !$esPasado) {
+                if (!$hayChoque && !$esPasado) {
                     $espacios[] = [
-                        'hora' => $horaEspacio,
+                        'hora' => $actual->format('H:i'),
                         'hora_formato' => $actual->format('h:i A'),
                         'horario_id' => $horario->id,
                     ];
                 }
 
-                $actual->addMinutes($duracion);
+                $actual->addMinutes($duracion + $horario->descanso_minutos);
             }
         }
 

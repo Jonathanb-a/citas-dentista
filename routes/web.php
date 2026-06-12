@@ -7,7 +7,9 @@ use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\Admin\EspecialidadController;
 use App\Http\Controllers\Admin\ServicioController;
 use App\Http\Controllers\Admin\HorarioController;
+use App\Http\Controllers\Admin\CitaController as AdminCitaController;
 use App\Http\Controllers\Paciente\CitaController;
+
 // Página principal
 Route::get('/', function () {
     return view('welcome');
@@ -42,11 +44,18 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->grou
     Route::patch('/servicios/{id}/toggle', [ServicioController::class, 'toggle'])->name('servicios.toggle');
     Route::delete('/servicios/{id}', [ServicioController::class, 'destroy'])->name('servicios.destroy');
 
-    // Horarios
+   // Horarios
     Route::get('/horarios', [HorarioController::class, 'index'])->name('horarios.index');
     Route::post('/horarios', [HorarioController::class, 'store'])->name('horarios.store');
+    Route::put('/horarios/{id}', [HorarioController::class, 'update'])->name('horarios.update');
     Route::patch('/horarios/{id}/toggle', [HorarioController::class, 'toggle'])->name('horarios.toggle');
     Route::delete('/horarios/{id}', [HorarioController::class, 'destroy'])->name('horarios.destroy');
+
+    // Citas
+    Route::get('/citas', [AdminCitaController::class, 'index'])->name('citas.index');
+    Route::patch('/citas/{id}/confirmar', [AdminCitaController::class, 'confirmar'])->name('citas.confirmar');
+    Route::patch('/citas/{id}/atender', [AdminCitaController::class, 'atender'])->name('citas.atender');
+    Route::patch('/citas/{id}/cancelar', [AdminCitaController::class, 'cancelar'])->name('citas.cancelar');
 });
 
 // Rutas Asistente — solo asistente

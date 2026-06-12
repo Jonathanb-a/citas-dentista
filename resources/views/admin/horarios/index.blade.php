@@ -1,6 +1,6 @@
 <x-admin.layout title="Horarios">
 
-    <div x-data="{ modalAbierto: false }">
+    <div x-data="horariosApp()">
 
         {{-- Header --}}
         <div class="flex items-center justify-between mb-8">
@@ -8,7 +8,7 @@
                 <h1 class="font-bold text-gray-800 text-2xl">Horarios de atención</h1>
                 <p class="font-light text-gray-400 text-sm mt-1">Define los días y horas en que la doctora atiende</p>
             </div>
-            <button @click="modalAbierto = true"
+            <button @click="abrirCrear()"
                     class="bg-[#d75078] text-white text-sm font-medium px-5 py-3 rounded-xl hover:bg-[#f285a2] transition-all duration-300 flex items-center gap-2">
                 <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
@@ -28,15 +28,27 @@
                     <div class="flex flex-col gap-3">
                         @foreach($horarios[$dia] as $horario)
                         <div class="flex items-center justify-between p-3 rounded-xl {{ $horario->disponible ? 'bg-[#fde7ed]' : 'bg-gray-50' }}">
-                            <div class="flex items-center gap-2">
-                                <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 {{ $horario->disponible ? 'text-[#d75078]' : 'text-gray-400' }}" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
-                                </svg>
-                                <span class="text-sm font-medium {{ $horario->disponible ? 'text-gray-700' : 'text-gray-400 line-through' }}">
-                                    {{ \Carbon\Carbon::parse($horario->hora_inicio)->format('h:i A') }} - {{ \Carbon\Carbon::parse($horario->hora_fin)->format('h:i A') }}
-                                </span>
+                            <div class="flex flex-col gap-0.5">
+                                <div class="flex items-center gap-2">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 {{ $horario->disponible ? 'text-[#d75078]' : 'text-gray-400' }}" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                                    </svg>
+                                    <span class="text-sm font-medium {{ $horario->disponible ? 'text-gray-700' : 'text-gray-400 line-through' }}">
+                                        {{ \Carbon\Carbon::parse($horario->hora_inicio)->format('h:i A') }} - {{ \Carbon\Carbon::parse($horario->hora_fin)->format('h:i A') }}
+                                    </span>
+                                </div>
+                                @if($horario->descanso_minutos > 0)
+                                    <span class="text-gray-400 text-xs ml-6">Descanso: {{ $horario->descanso_minutos }} min</span>
+                                @endif
                             </div>
                             <div class="flex items-center gap-1">
+                                {{-- Editar --}}
+                                <button @click='abrirEditar(@json($horario))'
+                                        class="p-1.5 text-gray-400 hover:text-[#d75078] rounded-lg transition-all duration-200" title="Editar">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
+                                    </svg>
+                                </button>
                                 {{-- Toggle --}}
                                 <form method="POST" action="{{ route('admin.horarios.toggle', $horario->id) }}">
                                     @csrf
@@ -70,7 +82,7 @@
 
         </div>
 
-        {{-- Modal Agregar --}}
+        {{-- Modal --}}
         <div x-show="modalAbierto" x-cloak
              class="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4"
              @click.self="modalAbierto = false">
@@ -81,39 +93,61 @@
                  x-transition:enter-end="opacity-100 scale-100"
                  class="bg-white rounded-2xl shadow-lg w-full max-w-md p-6">
 
-                <h2 class="font-bold text-gray-800 text-lg mb-6">Agregar horario</h2>
+                <h2 class="font-bold text-gray-800 text-lg mb-6" x-text="modoEdicion ? 'Editar horario' : 'Agregar horario'"></h2>
 
-                <form action="{{ route('admin.horarios.store') }}" method="POST" class="flex flex-col gap-4">
+                <form :action="modoEdicion ? '/admin/horarios/' + form.id : '{{ route('admin.horarios.store') }}'" method="POST" class="flex flex-col gap-4">
                     @csrf
+                    <template x-if="modoEdicion">
+                        <input type="hidden" name="_method" value="PUT">
+                    </template>
 
-                    {{-- Dia --}}
-                    <div class="flex flex-col gap-1.5">
-                        <label class="text-gray-600 text-sm font-medium">Día de la semana</label>
-                        <select name="dia_semana"
-                                class="w-full px-4 py-3 rounded-xl border border-gray-200 text-sm text-gray-700 focus:outline-none focus:border-[#d75078] focus:ring-2 focus:ring-[#fde7ed] transition-all duration-300">
-                            <option value="">Selecciona un día</option>
-                            <option value="lunes">Lunes</option>
-                            <option value="martes">Martes</option>
-                            <option value="miercoles">Miércoles</option>
-                            <option value="jueves">Jueves</option>
-                            <option value="viernes">Viernes</option>
-                            <option value="sabado">Sábado</option>
-                            <option value="domingo">Domingo</option>
-                        </select>
+                    {{-- Dias (solo al crear) --}}
+                    <div class="flex flex-col gap-2" x-show="!modoEdicion">
+                        <label class="text-gray-600 text-sm font-medium">Días de la semana</label>
+                        <div class="grid grid-cols-2 gap-2">
+                            @php
+                                $diasSemana = [
+                                    'lunes' => 'Lunes', 'martes' => 'Martes', 'miercoles' => 'Miércoles',
+                                    'jueves' => 'Jueves', 'viernes' => 'Viernes', 'sabado' => 'Sábado', 'domingo' => 'Domingo',
+                                ];
+                            @endphp
+                            @foreach($diasSemana as $valor => $nombre)
+                                <label class="flex items-center gap-2 p-2.5 rounded-xl border border-gray-200 cursor-pointer hover:bg-[#fde7ed] transition-all duration-200">
+                                    <input type="checkbox" name="dias[]" value="{{ $valor }}" class="accent-[#d75078]">
+                                    <span class="text-sm text-gray-700">{{ $nombre }}</span>
+                                </label>
+                            @endforeach
+                        </div>
+                        <span class="text-gray-400 text-xs">Marca todos los días que tendrán este mismo horario.</span>
+                    </div>
+
+                    {{-- Mostrar el día al editar --}}
+                    <div class="flex flex-col gap-1.5" x-show="modoEdicion">
+                        <label class="text-gray-600 text-sm font-medium">Día</label>
+                        <div class="px-4 py-3 rounded-xl bg-gray-50 text-sm text-gray-600 capitalize" x-text="form.dia_semana"></div>
                     </div>
 
                     {{-- Horas --}}
                     <div class="grid grid-cols-2 gap-4">
                         <div class="flex flex-col gap-1.5">
                             <label class="text-gray-600 text-sm font-medium">Hora inicio</label>
-                            <input type="time" name="hora_inicio"
+                            <input type="time" name="hora_inicio" x-model="form.hora_inicio"
                                    class="w-full px-4 py-3 rounded-xl border border-gray-200 text-sm text-gray-700 focus:outline-none focus:border-[#d75078] focus:ring-2 focus:ring-[#fde7ed] transition-all duration-300">
                         </div>
                         <div class="flex flex-col gap-1.5">
                             <label class="text-gray-600 text-sm font-medium">Hora fin</label>
-                            <input type="time" name="hora_fin"
+                            <input type="time" name="hora_fin" x-model="form.hora_fin"
                                    class="w-full px-4 py-3 rounded-xl border border-gray-200 text-sm text-gray-700 focus:outline-none focus:border-[#d75078] focus:ring-2 focus:ring-[#fde7ed] transition-all duration-300">
                         </div>
+                    </div>
+
+                    {{-- Descanso --}}
+                    <div class="flex flex-col gap-1.5">
+                        <label class="text-gray-600 text-sm font-medium">Descanso entre citas (minutos)</label>
+                        <input type="number" name="descanso_minutos" x-model="form.descanso_minutos" min="0" max="120"
+                               placeholder="Ej. 15"
+                               class="w-full px-4 py-3 rounded-xl border border-gray-200 text-sm text-gray-700 focus:outline-none focus:border-[#d75078] focus:ring-2 focus:ring-[#fde7ed] transition-all duration-300">
+                        <span class="text-gray-400 text-xs">Tiempo libre entre una cita y la siguiente. Déjalo en 0 si no quieres descanso.</span>
                     </div>
 
                     {{-- Botones --}}
@@ -132,5 +166,31 @@
         </div>
 
     </div>
+
+    <script>
+        function horariosApp() {
+            return {
+                modalAbierto: false,
+                modoEdicion: false,
+                form: { id: null, dia_semana: '', hora_inicio: '', hora_fin: '', descanso_minutos: 0 },
+                abrirCrear() {
+                    this.modoEdicion = false;
+                    this.form = { id: null, dia_semana: '', hora_inicio: '', hora_fin: '', descanso_minutos: 0 };
+                    this.modalAbierto = true;
+                },
+                abrirEditar(horario) {
+                    this.modoEdicion = true;
+                    this.form = {
+                        id: horario.id,
+                        dia_semana: horario.dia_semana,
+                        hora_inicio: horario.hora_inicio.substring(0,5),
+                        hora_fin: horario.hora_fin.substring(0,5),
+                        descanso_minutos: horario.descanso_minutos
+                    };
+                    this.modalAbierto = true;
+                }
+            }
+        }
+    </script>
 
 </x-admin.layout>

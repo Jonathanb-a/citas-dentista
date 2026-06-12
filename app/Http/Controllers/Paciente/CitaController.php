@@ -93,31 +93,39 @@ class CitaController extends Controller
             ])->withInput();
         }
 
-        // Crear la cita
-        $cita = Cita::create([
-            'paciente_id' => auth()->id(),
-            'servicio_id' => $request->servicio_id,
-            'horario_id' => $request->horario_id,
-            'fecha' => $request->fecha,
-            'hora' => $request->hora,
-            'status' => 'pendiente',
-            'confirmado_por_paciente' => false,
-            'confirmacion_limite' => Carbon::now()->addHours(24),
-            'motivo' => $request->motivo,
-        ]);
+        try {
+            // Crear la cita
+            $cita = Cita::create([
+                'paciente_id' => auth()->id(),
+                'servicio_id' => $request->servicio_id,
+                'horario_id' => $request->horario_id,
+                'fecha' => $request->fecha,
+                'hora' => $request->hora,
+                'status' => 'pendiente',
+                'confirmado_por_paciente' => false,
+                'confirmacion_limite' => Carbon::now()->addHours(24),
+                'motivo' => $request->motivo,
+            ]);
 
-        // Registrar en el historial
-        HistorialCita::create([
-            'cita_id' => $cita->id,
-            'user_id' => auth()->id(),
-            'accion' => 'creada',
-            'descripcion' => 'El paciente agendó la cita.',
-        ]);
+            // Registrar en el historial
+            HistorialCita::create([
+                'cita_id' => $cita->id,
+                'user_id' => auth()->id(),
+                'accion' => 'creada',
+                'descripcion' => 'El paciente agendó la cita.',
+            ]);
 
-        // TODO: Aquí se disparará el webhook a n8n para notificación WhatsApp
+            // TODO: Aquí se disparará el webhook a n8n para notificación WhatsApp
 
-        return redirect()->route('paciente.citas.index')
-            ->with('success', 'Tu cita fue agendada correctamente. Recibirás una confirmación pronto.');
+            return redirect()->route('paciente.citas.index')
+                ->with('success', 'Tu cita fue agendada correctamente. Recibirás una confirmación pronto.');
+
+        } catch (\Illuminate\Database\QueryException $e) {
+            // Si la base de datos rechaza por duplicado (race condition)
+            return back()->withErrors([
+                'hora' => 'Lo sentimos, alguien acaba de tomar ese horario. Por favor elige otro.',
+            ])->withInput();
+        }
     }
 
     // Cancelar cita
