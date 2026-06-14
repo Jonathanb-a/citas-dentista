@@ -69,20 +69,38 @@
                     </div>
                 </div>
 
-                {{-- Cancelar (solo si está pendiente o confirmada) --}}
-                @if(in_array($cita->status, ['pendiente', 'confirmada']))
-                    <form method="POST" action="{{ route('paciente.citas.cancelar', $cita->id) }}"
-                          onsubmit="return confirm('¿Seguro que deseas cancelar esta cita?');"
-                          class="mt-2">
-                        @csrf
-                        @method('PATCH')
-                        <button type="submit"
-                                class="w-full border border-red-200 text-red-500 text-sm font-medium py-2.5 rounded-xl hover:bg-red-50 transition-all duration-300">
-                            Cancelar cita
-                        </button>
-                    </form>
-                @endif
+              {{-- Confirmar asistencia (solo si está confirmada por la clínica y el paciente aún no confirma) --}}
+@if($cita->status === 'confirmada' && !$cita->confirmado_por_paciente)
+    <form method="POST" action="{{ route('paciente.citas.confirmar', $cita->id) }}" class="mt-2">
+        @csrf
+        @method('PATCH')
+        <button type="submit"
+                class="w-full bg-green-500 text-white text-sm font-medium py-2.5 rounded-xl hover:bg-green-600 transition-all duration-300">
+            ✓ Confirmar mi asistencia
+        </button>
+    </form>
+@endif
 
+{{-- Aviso de confirmación hecha --}}
+@if($cita->status === 'confirmada' && $cita->confirmado_por_paciente)
+    <div class="mt-2 bg-green-50 text-green-600 text-xs font-medium py-2 px-3 rounded-xl text-center">
+        ✓ Asistencia confirmada
+    </div>
+@endif
+
+{{-- Cancelar (solo si está pendiente o confirmada) --}}
+@if(in_array($cita->status, ['pendiente', 'confirmada']))
+    <form method="POST" action="{{ route('paciente.citas.cancelar', $cita->id) }}"
+          onsubmit="return confirm('¿Seguro que deseas cancelar esta cita?');"
+          class="mt-2">
+        @csrf
+        @method('PATCH')
+        <button type="submit"
+                class="w-full border border-red-200 text-red-500 text-sm font-medium py-2.5 rounded-xl hover:bg-red-50 transition-all duration-300">
+            Cancelar cita
+        </button>
+    </form>
+@endif
             </div>
             @endforeach
         </div>

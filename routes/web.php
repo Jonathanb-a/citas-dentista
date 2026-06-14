@@ -71,10 +71,11 @@ Route::middleware(['auth', 'role:paciente'])->prefix('paciente')->name('paciente
         return redirect()->route('paciente.citas.index');
     })->name('dashboard');
 
-    // Citas
+  // Citas
     Route::get('/citas', [CitaController::class, 'index'])->name('citas.index');
     Route::get('/citas/agendar', [CitaController::class, 'create'])->name('citas.create');
     Route::post('/citas/disponibilidad', [CitaController::class, 'disponibilidad'])->name('citas.disponibilidad');
     Route::post('/citas', [CitaController::class, 'store'])->name('citas.store');
+    Route::patch('/citas/{id}/confirmar', [CitaController::class, 'confirmar'])->name('citas.confirmar');
     Route::patch('/citas/{id}/cancelar', [CitaController::class, 'cancelar'])->name('citas.cancelar');
 });

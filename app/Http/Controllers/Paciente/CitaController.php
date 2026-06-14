@@ -153,4 +153,31 @@ class CitaController extends Controller
         return redirect()->route('paciente.citas.index')
             ->with('success', 'Tu cita fue cancelada correctamente.');
     }
+
+    // Confirmar asistencia (el paciente confirma)
+    public function confirmar($id)
+    {
+        $cita = Cita::where('id', $id)
+            ->where('paciente_id', auth()->id())
+            ->firstOrFail();
+
+        if ($cita->status !== 'confirmada') {
+            return back()->with('error', 'Esta cita aún no ha sido aceptada por la clínica o ya no se puede confirmar.');
+        }
+
+        if ($cita->confirmado_por_paciente) {
+            return back()->with('error', 'Ya confirmaste esta cita anteriormente.');
+        }
+
+        $cita->update(['confirmado_por_paciente' => true]);
+
+        HistorialCita::create([
+            'cita_id' => $cita->id,
+            'user_id' => auth()->id(),
+            'accion' => 'confirmada',
+            'descripcion' => 'El paciente confirmó su asistencia.',
+        ]);
+
+        return back()->with('success', '¡Gracias! Tu asistencia quedó confirmada.');
+    }
 }

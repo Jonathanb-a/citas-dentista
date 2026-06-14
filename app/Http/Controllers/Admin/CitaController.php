@@ -41,7 +41,10 @@ class CitaController extends Controller
             return back()->with('error', 'Solo se pueden confirmar citas pendientes.');
         }
 
-        $cita->update(['status' => 'confirmada']);
+        $cita->update([
+            'status' => 'confirmada',
+            'confirmacion_limite' => Carbon::now()->addHours(24),
+        ]);
 
         HistorialCita::create([
             'cita_id' => $cita->id,
