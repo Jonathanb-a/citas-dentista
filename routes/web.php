@@ -9,6 +9,7 @@ use App\Http\Controllers\Admin\ServicioController;
 use App\Http\Controllers\Admin\HorarioController;
 use App\Http\Controllers\Admin\CitaController as AdminCitaController;
 use App\Http\Controllers\Paciente\CitaController;
+use App\Http\Controllers\Paciente\DashboardController as PacienteDashboardController;
 
 // Página principal
 Route::get('/', function () {
@@ -44,7 +45,7 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->grou
     Route::patch('/servicios/{id}/toggle', [ServicioController::class, 'toggle'])->name('servicios.toggle');
     Route::delete('/servicios/{id}', [ServicioController::class, 'destroy'])->name('servicios.destroy');
 
-   // Horarios
+    // Horarios
     Route::get('/horarios', [HorarioController::class, 'index'])->name('horarios.index');
     Route::post('/horarios', [HorarioController::class, 'store'])->name('horarios.store');
     Route::put('/horarios/{id}', [HorarioController::class, 'update'])->name('horarios.update');
@@ -67,11 +68,9 @@ Route::middleware(['auth', 'role:asistente'])->prefix('asistente')->name('asiste
 
 // Rutas Paciente — solo paciente
 Route::middleware(['auth', 'role:paciente'])->prefix('paciente')->name('paciente.')->group(function () {
-    Route::get('/dashboard', function () {
-        return redirect()->route('paciente.citas.index');
-    })->name('dashboard');
+    Route::get('/dashboard', [PacienteDashboardController::class, 'index'])->name('dashboard');
 
-  // Citas
+    // Citas
     Route::get('/citas', [CitaController::class, 'index'])->name('citas.index');
     Route::get('/citas/agendar', [CitaController::class, 'create'])->name('citas.create');
     Route::post('/citas/disponibilidad', [CitaController::class, 'disponibilidad'])->name('citas.disponibilidad');

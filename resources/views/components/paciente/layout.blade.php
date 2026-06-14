@@ -16,12 +16,16 @@
         <div class="max-w-6xl mx-auto px-6 flex items-center justify-between h-20">
 
             {{-- Logo --}}
-            <a href="{{ route('paciente.citas.index') }}">
+            <a href="{{ route('paciente.dashboard') }}">
                 <img src="{{ asset('img/logo-dentista.png') }}" alt="Logo" class="h-14 w-auto object-contain">
             </a>
 
             {{-- Menu desktop --}}
             <div class="hidden md:flex items-center gap-8">
+                <a href="{{ route('paciente.dashboard') }}"
+                   class="text-sm font-medium transition-colors duration-300 {{ request()->routeIs('paciente.dashboard') ? 'text-[#d75078]' : 'text-gray-500 hover:text-[#d75078]' }}">
+                    Inicio
+                </a>
                 <a href="{{ route('paciente.citas.index') }}"
                    class="text-sm font-medium transition-colors duration-300 {{ request()->routeIs('paciente.citas.index') ? 'text-[#d75078]' : 'text-gray-500 hover:text-[#d75078]' }}">
                     Mis citas
@@ -55,6 +59,7 @@
 
         {{-- Menu mobile --}}
         <div x-show="menuAbierto" x-cloak class="md:hidden bg-white border-t border-gray-100 px-6 py-4 flex flex-col gap-3">
+            <a href="{{ route('paciente.dashboard') }}" class="text-sm font-medium text-gray-600">Inicio</a>
             <a href="{{ route('paciente.citas.index') }}" class="text-sm font-medium text-gray-600">Mis citas</a>
             <a href="{{ route('paciente.citas.create') }}" class="text-sm font-medium text-gray-600">Agendar cita</a>
             <form method="POST" action="{{ route('logout') }}">
