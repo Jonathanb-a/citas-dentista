@@ -64,7 +64,7 @@
          class="fixed inset-0 bg-black/30 z-30 md:hidden"></div>
 
     {{-- Contenido principal --}}
-    <main class="flex-1 md:ml-64 p-4 md:p-8">
+    <main class="flex-1 md:ml-64 p-4 md:p-8 w-full min-w-0 overflow-x-hidden">
 
         {{-- Boton menu mobile --}}
         <button @click="sidebarOpen = true" class="md:hidden mb-4 p-2 bg-white rounded-lg shadow-sm">
