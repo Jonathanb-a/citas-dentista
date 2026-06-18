@@ -28,13 +28,31 @@ class DashboardController extends Controller
             ->orderBy('hora')
             ->get();
 
+        // Citas del mes para el calendario (todas, con detalle)
+        $citasMes = Cita::with(['paciente', 'servicio'])
+            ->whereIn('status', ['pendiente', 'confirmada', 'atendida'])
+            ->orderBy('hora')
+            ->get()
+            ->map(function ($cita) {
+                return [
+                    'id' => $cita->id,
+                    'fecha' => Carbon::parse($cita->fecha)->format('Y-m-d'),
+                    'hora' => Carbon::parse($cita->hora)->format('H:i'),
+                    'hora_formato' => Carbon::parse($cita->hora)->format('h:i A'),
+                    'paciente' => $cita->paciente->name . ' ' . $cita->paciente->apellidos,
+                    'servicio' => $cita->servicio->nombre,
+                    'status' => $cita->status,
+                ];
+            });
+
         return view('admin.dashboard', compact(
             'citasHoy',
             'citasPendientes',
             'citasAtendidas',
             'citasCanceladas',
             'totalPacientes',
-            'citas'
+            'citas',
+            'citasMes'
         ));
     }
 }

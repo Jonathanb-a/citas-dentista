@@ -8,6 +8,8 @@ use App\Http\Controllers\Admin\EspecialidadController;
 use App\Http\Controllers\Admin\ServicioController;
 use App\Http\Controllers\Admin\HorarioController;
 use App\Http\Controllers\Admin\CitaController as AdminCitaController;
+use App\Http\Controllers\Asistente\DashboardController as AsistenteDashboardController;
+use App\Http\Controllers\Asistente\CitaController as AsistenteCitaController;
 use App\Http\Controllers\Paciente\CitaController;
 use App\Http\Controllers\Paciente\DashboardController as PacienteDashboardController;
 
@@ -54,6 +56,9 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->grou
 
     // Citas
     Route::get('/citas', [AdminCitaController::class, 'index'])->name('citas.index');
+    Route::get('/citas/crear', [AdminCitaController::class, 'create'])->name('citas.create');
+    Route::post('/citas/disponibilidad', [AdminCitaController::class, 'disponibilidad'])->name('citas.disponibilidad');
+    Route::post('/citas', [AdminCitaController::class, 'store'])->name('citas.store');
     Route::patch('/citas/{id}/confirmar', [AdminCitaController::class, 'confirmar'])->name('citas.confirmar');
     Route::patch('/citas/{id}/atender', [AdminCitaController::class, 'atender'])->name('citas.atender');
     Route::patch('/citas/{id}/cancelar', [AdminCitaController::class, 'cancelar'])->name('citas.cancelar');
@@ -61,9 +66,16 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->grou
 
 // Rutas Asistente — solo asistente
 Route::middleware(['auth', 'role:asistente'])->prefix('asistente')->name('asistente.')->group(function () {
-    Route::get('/dashboard', function () {
-        return 'Dashboard Asistente — En construcción';
-    })->name('dashboard');
+    Route::get('/dashboard', [AsistenteDashboardController::class, 'index'])->name('dashboard');
+
+    // Citas
+    Route::get('/citas', [AsistenteCitaController::class, 'index'])->name('citas.index');
+    Route::get('/citas/crear', [AsistenteCitaController::class, 'create'])->name('citas.create');
+    Route::post('/citas/disponibilidad', [AsistenteCitaController::class, 'disponibilidad'])->name('citas.disponibilidad');
+    Route::post('/citas', [AsistenteCitaController::class, 'store'])->name('citas.store');
+    Route::patch('/citas/{id}/confirmar', [AsistenteCitaController::class, 'confirmar'])->name('citas.confirmar');
+    Route::patch('/citas/{id}/atender', [AsistenteCitaController::class, 'atender'])->name('citas.atender');
+    Route::patch('/citas/{id}/cancelar', [AsistenteCitaController::class, 'cancelar'])->name('citas.cancelar');
 });
 
 // Rutas Paciente — solo paciente

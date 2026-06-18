@@ -1,12 +1,19 @@
 <x-admin.layout title="Citas">
 
-    {{-- Header --}}
-    <div class="flex items-center justify-between mb-8">
-        <div>
-            <h1 class="font-bold text-gray-800 text-2xl">Gestión de citas</h1>
-            <p class="font-light text-gray-400 text-sm mt-1">Administra todas las citas de la clínica</p>
-        </div>
+{{-- Header --}}
+<div class="flex items-center justify-between mb-8">
+    <div>
+        <h1 class="font-bold text-gray-800 text-2xl">Gestión de citas</h1>
+        <p class="font-light text-gray-400 text-sm mt-1">Administra todas las citas de la clínica</p>
     </div>
+    <a href="{{ route('admin.citas.create') }}"
+       class="bg-[#d75078] text-white text-sm font-medium px-5 py-3 rounded-xl hover:bg-[#f285a2] transition-all duration-300 flex items-center gap-2">
+        <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+        </svg>
+        Nueva cita
+    </a>
+</div>
 
     {{-- Filtros --}}
     <div class="bg-white rounded-2xl shadow-sm p-6 mb-6">
