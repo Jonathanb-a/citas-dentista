@@ -92,4 +92,55 @@ class CitaManualService
             return ['error' => 'Ese horario acaba de ser ocupado. Por favor elige otro.'];
         }
     }
+/**
+     * Reagenda una cita existente a una nueva fecha y hora.
+     */
+    public function reagendar($citaId, array $datos, $reagendadoPor)
+    {
+        $cita = Cita::findOrFail($citaId);
+
+        // No se puede reagendar una cita atendida o cancelada
+        if (in_array($cita->status, ['atendida', 'cancelada'])) {
+            return ['error' => 'No se puede reagendar una cita que ya fue atendida o cancelada.'];
+        }
+
+        // Verificar disponibilidad del nuevo horario
+        $espacios = $this->disponibilidad->espaciosDisponibles(
+            $datos['fecha'],
+            $cita->servicio_id
+        );
+
+        $horaDisponible = collect($espacios)->contains('hora', $datos['hora']);
+
+        if (!$horaDisponible) {
+            return ['error' => 'Ese horario no está disponible. Por favor elige otro.'];
+        }
+
+        // Actualizar la cita con la nueva fecha y hora
+        try {
+            $cita->update([
+                'fecha' => $datos['fecha'],
+                'hora' => $datos['hora'],
+                'horario_id' => $datos['horario_id'],
+                'status' => 'confirmada',
+                'confirmado_por_paciente' => false,
+                'confirmacion_limite' => Carbon::now()->addHours(24),
+            ]);
+
+            HistorialCita::create([
+                'cita_id' => $cita->id,
+                'user_id' => $reagendadoPor,
+                'accion' => 'reagendada',
+                'descripcion' => 'Cita reagendada por ' . auth()->user()->name . ' a una nueva fecha y hora.',
+            ]);
+
+            // TODO: Webhook n8n — notificar reagendamiento al paciente
+
+            return ['cita' => $cita];
+
+        } catch (\Illuminate\Database\QueryException $e) {
+            return ['error' => 'Ese horario acaba de ser ocupado. Por favor elige otro.'];
+        }
+    }
+
 }

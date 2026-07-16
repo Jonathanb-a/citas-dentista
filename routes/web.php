@@ -58,6 +58,7 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->grou
     Route::get('/citas', [AdminCitaController::class, 'index'])->name('citas.index');
     Route::get('/citas/crear', [AdminCitaController::class, 'create'])->name('citas.create');
     Route::post('/citas/disponibilidad', [AdminCitaController::class, 'disponibilidad'])->name('citas.disponibilidad');
+    Route::patch('/citas/{id}/reagendar', [AdminCitaController::class, 'reagendar'])->name('citas.reagendar');
     Route::post('/citas', [AdminCitaController::class, 'store'])->name('citas.store');
     Route::patch('/citas/{id}/confirmar', [AdminCitaController::class, 'confirmar'])->name('citas.confirmar');
     Route::patch('/citas/{id}/atender', [AdminCitaController::class, 'atender'])->name('citas.atender');
@@ -72,6 +73,7 @@ Route::middleware(['auth', 'role:asistente'])->prefix('asistente')->name('asiste
     Route::get('/citas', [AsistenteCitaController::class, 'index'])->name('citas.index');
     Route::get('/citas/crear', [AsistenteCitaController::class, 'create'])->name('citas.create');
     Route::post('/citas/disponibilidad', [AsistenteCitaController::class, 'disponibilidad'])->name('citas.disponibilidad');
+    Route::patch('/citas/{id}/reagendar', [AsistenteCitaController::class, 'reagendar'])->name('citas.reagendar');
     Route::post('/citas', [AsistenteCitaController::class, 'store'])->name('citas.store');
     Route::patch('/citas/{id}/confirmar', [AsistenteCitaController::class, 'confirmar'])->name('citas.confirmar');
     Route::patch('/citas/{id}/atender', [AsistenteCitaController::class, 'atender'])->name('citas.atender');

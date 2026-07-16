@@ -107,6 +107,28 @@ class CitaController extends Controller
         return response()->json($espacios);
     }
 
+    // Reagendar cita
+    public function reagendar(Request $request, $id)
+    {
+        $request->validate([
+            'fecha' => 'required|date|after_or_equal:today',
+            'hora' => 'required|date_format:H:i',
+            'horario_id' => 'required|exists:horarios,id',
+        ], [
+            'fecha.required' => 'Debes seleccionar una fecha.',
+            'hora.required' => 'Debes seleccionar un horario.',
+        ]);
+
+        $resultado = $this->citaManual->reagendar($id, $request->all(), auth()->id());
+
+        if (isset($resultado['error'])) {
+            return back()->with('error', $resultado['error']);
+        }
+
+        return redirect()->route('admin.citas.index')
+            ->with('success', 'Cita reagendada correctamente. El paciente deberá confirmar su asistencia nuevamente.');
+    }
+
     // Confirmar cita (la doctora acepta)
     public function confirmar($id)
     {
