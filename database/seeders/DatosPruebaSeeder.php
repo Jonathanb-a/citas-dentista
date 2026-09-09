@@ -115,5 +115,13 @@ class DatosPruebaSeeder extends Seeder
             'enfermedades' => 'Ninguna',
             'medicamentos' => 'Ninguno',
         ]);
+
+                Servicio::create([
+            'especialidad_id' => $general->id,
+            'nombre' => 'Consulta de valoración',
+            'descripcion' => 'Evaluación general para diagnosticar tu molestia y definir el tratamiento adecuado. Ideal si no sabes qué necesitas.',
+            'duracion_minutos' => 30,
+            'activo' => true,
+        ]);
     }
 }
