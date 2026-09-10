@@ -1,5 +1,4 @@
-<div>
-   <!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="es">
 <head>
     <meta charset="UTF-8">
@@ -37,19 +36,29 @@
                 </p>
             </div>
 
+            {{-- Errores --}}
+            @if ($errors->any())
+                <div class="bg-red-50 border border-red-200 rounded-xl px-4 py-3">
+                    @foreach ($errors->all() as $error)
+                        <p class="text-red-500 text-sm" style="font-family: 'Montserrat', sans-serif;">{{ $error }}</p>
+                    @endforeach
+                </div>
+            @endif
+
             {{-- Formulario --}}
             <form method="POST" action="/login" class="flex flex-col gap-4">
                 @csrf
 
-                {{-- Email --}}
+                {{-- Correo o teléfono --}}
                 <div class="flex flex-col gap-1.5">
                     <label class="text-gray-600 text-sm font-medium"
                            style="font-family: 'Montserrat', sans-serif;">
-                        Correo electrónico
+                        Correo o teléfono
                     </label>
-                    <input type="email"
-                           name="email"
-                           placeholder="tucorreo@gmail.com"
+                    <input type="text"
+                           name="identificador"
+                           value="{{ old('identificador') }}"
+                           placeholder="correo@ejemplo.com o 9991234567"
                            class="w-full px-4 py-3 rounded-xl border border-gray-200 text-sm text-gray-700 focus:outline-none focus:border-[#d75078] focus:ring-2 focus:ring-[#fde7ed] transition-all duration-300"
                            style="font-family: 'Montserrat', sans-serif;">
                 </div>
@@ -133,4 +142,3 @@
 
 </body>
 </html>
-</div>

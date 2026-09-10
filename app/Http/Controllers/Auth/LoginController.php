@@ -13,37 +13,38 @@ class LoginController extends Controller
         return view('auth.login');
     }
 
+       // Procesa el inicio de sesión (acepta correo o teléfono)
     public function login(Request $request)
     {
         $request->validate([
-            'email' => 'required|email',
-            'password' => 'required|min:6',
+            'identificador' => 'required|string',
+            'password' => 'required',
         ], [
-            'email.required' => 'El correo es obligatorio.',
-            'email.email' => 'Ingresa un correo válido.',
+            'identificador.required' => 'Escribe tu correo o teléfono.',
             'password.required' => 'La contraseña es obligatoria.',
-            'password.min' => 'La contraseña debe tener al menos 6 caracteres.',
         ]);
 
-        $credentials = $request->only('email', 'password');
+        // ¿Es correo o teléfono?
+        $campo = str_contains($request->identificador, '@') ? 'email' : 'telefono';
 
-        if (Auth::attempt($credentials)) {
+        $credenciales = [
+            $campo => $request->identificador,
+            'password' => $request->password,
+        ];
+
+        if (Auth::attempt($credenciales)) {
             $request->session()->regenerate();
 
-            $user = Auth::user();
-
-            if ($user->role === 'admin') {
-                return redirect()->route('admin.dashboard');
-            } elseif ($user->role === 'asistente') {
-                return redirect()->route('asistente.dashboard');
-            } else {
-                return redirect()->route('paciente.dashboard');
-            }
+            return match (Auth::user()->role) {
+                'admin'     => redirect()->route('admin.dashboard'),
+                'asistente' => redirect()->route('asistente.dashboard'),
+                default     => redirect()->route('paciente.dashboard'),
+            };
         }
 
         return back()->withErrors([
-            'email' => 'El correo o la contraseña son incorrectos.',
-        ])->withInput($request->only('email'));
+            'identificador' => 'Los datos no coinciden con nuestros registros.',
+        ])->onlyInput('identificador');
     }
 
     public function logout(Request $request)
