@@ -96,15 +96,15 @@ class DatosPruebaSeeder extends Seeder
         ]);
 
         // PACIENTE de prueba
-        $paciente = User::create([
-            'name' => 'María',
-            'apellidos' => 'García López',
-            'email' => 'paciente@test.com',
-            'telefono' => '9991112233',
-            'password' => Hash::make('paciente123'),
-            'role' => 'paciente',
-            'activo' => true,
-        ]);
+        $paciente = new User();
+        $paciente->name      = 'María';
+        $paciente->apellidos = 'García López';
+        $paciente->email     = 'paciente@test.com';
+        $paciente->telefono  = '9991112233';
+        $paciente->password  = Hash::make('paciente123');
+        $paciente->role      = 'paciente';
+        $paciente->activo    = true;
+        $paciente->save();
 
         // Expediente del paciente
         Expediente::create([

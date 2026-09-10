@@ -156,9 +156,9 @@
                                 <p class="text-gray-800 text-sm font-medium" x-text="citaSeleccionada.hora_formato"></p>
                             </div>
                         </div>
-                        <div>
-                            <span class="text-gray-400 text-xs">Estado</span>
-                            <p class="text-sm font-medium capitalize" x-text="citaSeleccionada.status"></p>
+                        <div x-show="citaSeleccionada.motivo">
+                            <span class="text-gray-400 text-xs">Motivo / molestia del paciente</span>
+                            <p class="text-gray-700 text-sm bg-[#FFF6F6] rounded-xl p-3 mt-1" x-text="citaSeleccionada.motivo"></p>
                         </div>
                         <a href="{{ route('admin.citas.index') }}"
                            class="mt-2 bg-[#d75078] text-white text-sm font-medium py-2.5 rounded-xl hover:bg-[#f285a2] transition-all duration-300 text-center">

@@ -11,25 +11,25 @@ class AdminSeeder extends Seeder
     public function run(): void
     {
         // Admin — Doctora
-        User::create([
-            'name'      => 'Melissa',
-            'apellidos' => 'López N.',
-            'email'     => 'admin@dentissa.com',
-            'telefono'  => '9991231234',
-            'password'  => Hash::make('admin123'),
-            'role'      => 'admin',
-            'activo'    => true,
-        ]);
+        $admin = new User();
+        $admin->name      = 'Melissa';
+        $admin->apellidos = 'López N.';
+        $admin->email     = 'admin@dentissa.com';
+        $admin->telefono  = '9991231234';
+        $admin->password  = Hash::make('admin123');
+        $admin->role      = 'admin';
+        $admin->activo    = true;
+        $admin->save();
 
         // Asistente
-        User::create([
-            'name'      => 'Asistente',
-            'apellidos' => 'Dentissa',
-            'email'     => 'asistente@dentissa.com',
-            'telefono'  => '9991231235',
-            'password'  => Hash::make('asistente123'),
-            'role'      => 'asistente',
-            'activo'    => true,
-        ]);
+        $asistente = new User();
+        $asistente->name      = 'Asistente';
+        $asistente->apellidos = 'Dentissa';
+        $asistente->email     = 'asistente@dentissa.com';
+        $asistente->telefono  = '9991231235';
+        $asistente->password  = Hash::make('asistente123');
+        $asistente->role      = 'asistente';
+        $asistente->activo    = true;
+        $asistente->save();
     }
 }

@@ -6,6 +6,28 @@
         <p class="font-light text-gray-400 text-sm mt-1">Bienvenida a tu portal de citas</p>
     </div>
 
+        {{-- Aviso de correo sin verificar --}}
+    @if(!auth()->user()->hasVerifiedEmail())
+        <div class="mb-8 bg-yellow-50 border border-yellow-200 rounded-2xl p-5 flex flex-col sm:flex-row sm:items-center gap-4">
+            <div class="w-10 h-10 bg-yellow-100 rounded-full flex items-center justify-center flex-shrink-0">
+                <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 text-yellow-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
+                </svg>
+            </div>
+            <div class="flex-1">
+                <p class="text-yellow-800 text-sm font-medium">Verifica tu correo electrónico</p>
+                <p class="text-yellow-700 text-xs mt-0.5">Te enviamos un enlace a <strong>{{ auth()->user()->email }}</strong>. Verificarlo te permitirá recuperar tu contraseña si la olvidas.</p>
+            </div>
+            <form method="POST" action="{{ route('verification.send') }}" class="flex-shrink-0">
+                @csrf
+                <button type="submit"
+                        class="w-full sm:w-auto bg-yellow-500 text-white text-xs font-medium px-4 py-2.5 rounded-xl hover:bg-yellow-600 transition-all duration-300">
+                    Reenviar correo
+                </button>
+            </form>
+        </div>
+    @endif
+    
     {{-- Próxima cita destacada --}}
     @if($proximaCita)
         <div class="bg-[#d75078] rounded-2xl shadow-sm p-8 mb-8 text-white">

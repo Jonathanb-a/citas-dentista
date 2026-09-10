@@ -26,17 +26,21 @@ class CitaManualService
     public function crear(array $datos, $creadoPor)
     {
         // 1. Determinar el paciente
+                 $passwordTemporal = null;
+
         if ($datos['tipo_paciente'] === 'nuevo') {
-            // Crear paciente nuevo
-            $paciente = User::create([
-                'name' => $datos['nuevo_nombre'],
-                'apellidos' => $datos['nuevo_apellidos'],
-                'telefono' => $datos['nuevo_telefono'] ?? null,
-                'email' => $datos['nuevo_email'],
-                'password' => Hash::make('paciente123'), // contraseña temporal
-                'role' => 'paciente',
-                'activo' => true,
-            ]);
+            // Contraseña temporal aleatoria (única por paciente)
+            $passwordTemporal = \Illuminate\Support\Str::random(10);
+
+            $paciente = new User();
+            $paciente->name = $datos['nuevo_nombre'];
+            $paciente->apellidos = $datos['nuevo_apellidos'];
+            $paciente->telefono = $datos['nuevo_telefono'] ?? null;
+            $paciente->email = $datos['nuevo_email'];
+            $paciente->password = Hash::make($passwordTemporal);
+            $paciente->role = 'paciente';   // asignado explícitamente, no por fillable
+            $paciente->activo = true;
+            $paciente->save();
 
             // Crear su expediente vacío
             Expediente::create(['paciente_id' => $paciente->id]);
@@ -86,7 +90,7 @@ class CitaManualService
                 'descripcion' => 'Cita creada manualmente por ' . auth()->user()->name . '.',
             ]);
 
-            return ['cita' => $cita];
+            return ['cita' => $cita, 'password_temporal' => $passwordTemporal];
 
         } catch (\Illuminate\Database\QueryException $e) {
             return ['error' => 'Ese horario acaba de ser ocupado. Por favor elige otro.'];

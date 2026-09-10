@@ -42,6 +42,7 @@ class DashboardController extends Controller
                     'paciente' => $cita->paciente->name . ' ' . $cita->paciente->apellidos,
                     'servicio' => $cita->servicio->nombre,
                     'status' => $cita->status,
+                    'motivo' => $cita->motivo,
                 ];
             });
 

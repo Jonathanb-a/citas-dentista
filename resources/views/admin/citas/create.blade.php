@@ -76,7 +76,7 @@
                         <input type="email" name="nuevo_email"
                                class="w-full px-4 py-3 rounded-xl border border-gray-200 text-sm text-gray-700 focus:outline-none focus:border-[#d75078] focus:ring-2 focus:ring-[#fde7ed] transition-all duration-300">
                     </div>
-                    <p class="text-gray-400 text-xs md:col-span-2">Se creará una cuenta con contraseña temporal: <strong>paciente123</strong></p>
+                   <p class="text-gray-400 text-xs md:col-span-2">Se creará su cuenta con una contraseña temporal que se mostrará al guardar la cita.</p>
                 </div>
             </div>
 

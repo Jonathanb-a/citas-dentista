@@ -70,7 +70,8 @@ class CitaController extends Controller
             'nuevo_nombre' => 'required_if:tipo_paciente,nuevo|nullable|string|max:255',
             'nuevo_apellidos' => 'required_if:tipo_paciente,nuevo|nullable|string|max:255',
             'nuevo_email' => 'required_if:tipo_paciente,nuevo|nullable|email|unique:users,email',
-            'nuevo_telefono' => 'nullable|string|max:20',
+            'nuevo_telefono.unique' => 'Ya existe un paciente con ese teléfono.',
+            'nuevo_telefono' => 'nullable|string|max:20|unique:users,telefono',
             'servicio_id' => 'required|exists:servicios,id',
             'horario_id' => 'required|exists:horarios,id',
             'fecha' => 'required|date|after_or_equal:today',
@@ -87,8 +88,15 @@ class CitaController extends Controller
             return back()->with('error', $resultado['error'])->withInput();
         }
 
-        return redirect()->route('asistente.citas.index')
-            ->with('success', 'Cita creada correctamente.');
+        $mensaje = 'Cita creada correctamente.';
+
+        // Si se creó un paciente nuevo, mostrar su contraseña temporal
+        if (!empty($resultado['password_temporal'])) {
+            $mensaje .= ' Contraseña temporal del paciente: ' . $resultado['password_temporal']
+                     . ' — anótala y compártela con él (no se volverá a mostrar).';
+        }
+
+        return redirect()->route('asistente.citas.index')->with('success', $mensaje);
     }
 
     // Calcular disponibilidad (AJAX)

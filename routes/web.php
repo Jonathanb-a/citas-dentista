@@ -29,6 +29,25 @@ Route::post('/logout', [LoginController::class, 'logout'])->name('logout');
 Route::get('/register', [RegisterController::class, 'show'])->name('register');
 Route::post('/register', [RegisterController::class, 'register']);
 
+// Recuperación de contraseña
+use App\Http\Controllers\Auth\PasswordResetController;
+
+Route::get('/forgot-password', [PasswordResetController::class, 'solicitarFormulario'])->name('password.request');
+Route::post('/forgot-password', [PasswordResetController::class, 'enviarLink'])->middleware('throttle:3,1')->name('password.email');
+Route::get('/reset-password/{token}', [PasswordResetController::class, 'restablecerFormulario'])->name('password.reset');
+Route::post('/reset-password', [PasswordResetController::class, 'restablecer'])->name('password.update');
+
+// Verificación de correo (opcional, no bloquea el acceso)
+Route::get('/email/verify/{id}/{hash}', function (\Illuminate\Foundation\Auth\EmailVerificationRequest $request) {
+    $request->fulfill();
+    return redirect()->route('paciente.dashboard')->with('success', '¡Tu correo fue verificado correctamente!');
+})->middleware(['auth', 'signed'])->name('verification.verify');
+
+Route::post('/email/verification-notification', function (\Illuminate\Http\Request $request) {
+    $request->user()->sendEmailVerificationNotification();
+    return back()->with('success', 'Te reenviamos el correo de verificación. Revisa tu bandeja.');
+})->middleware(['auth', 'throttle:3,1'])->name('verification.send');
+
 // Rutas Admin — solo doctora
 Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->group(function () {
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');

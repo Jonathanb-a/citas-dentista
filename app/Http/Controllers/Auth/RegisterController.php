@@ -22,8 +22,8 @@ class RegisterController extends Controller
             'name'                  => 'required|string|max:255',
             'apellidos'             => 'required|string|max:255',
             'email'                 => 'required|email|unique:users,email',
-            'telefono'              => 'required|string|max:20',
-            'password'              => 'required|min:6|confirmed',
+            'telefono'              => 'required|string|max:20|unique:users,telefono',
+            'password'              => 'required|min:8|confirmed',
         ], [
             'name.required'         => 'El nombre es obligatorio.',
             'apellidos.required'    => 'Los apellidos son obligatorios.',
@@ -31,25 +31,27 @@ class RegisterController extends Controller
             'email.email'           => 'Ingresa un correo válido.',
             'email.unique'          => 'Este correo ya está registrado.',
             'telefono.required'     => 'El teléfono es obligatorio.',
+            'telefono.unique'       => 'Ese teléfono ya está registrado.',
             'password.required'     => 'La contraseña es obligatoria.',
-            'password.min'          => 'La contraseña debe tener al menos 6 caracteres.',
+            'password.min'          => 'La contraseña debe tener al menos 8 caracteres.',
             'password.confirmed'    => 'Las contraseñas no coinciden.',
         ]);
 
-        $user = User::create([
-            'name'      => $request->name,
-            'apellidos' => $request->apellidos,
-            'email'     => $request->email,
-            'telefono'  => $request->telefono,
-            'password'  => Hash::make($request->password),
-            'role'      => 'paciente',
-            'activo'    => true,
-        ]);
+        $user = new User();
+        $user->name      = $request->name;
+        $user->apellidos = $request->apellidos;
+        $user->email     = $request->email;
+        $user->telefono  = $request->telefono;
+        $user->password  = Hash::make($request->password);
+        $user->role      = 'paciente';   // asignado en código, nunca desde el formulario
+        $user->activo    = true;
+        $user->save();
 
-        // Crear expediente vacío automáticamente
-        Expediente::create([
-            'paciente_id' => $user->id,
-        ]);
+        // Expediente clínico vacío creado automáticamente
+        Expediente::create(['paciente_id' => $user->id]);
+
+        // Enviar correo de verificación (no bloquea el uso del sistema)
+        $user->sendEmailVerificationNotification();
 
         Auth::login($user);
 

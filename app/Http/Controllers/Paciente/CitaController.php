@@ -51,7 +51,7 @@ class CitaController extends Controller
     public function disponibilidad(Request $request)
     {
         $request->validate([
-            'fecha' => 'required|date|after_or_equal:today',
+            'fecha' => 'required|date|after_or_equal:today|before_or_equal:' . Carbon::today()->addMonths(3)->format('Y-m-d'),
             'servicio_id' => 'required|exists:servicios,id',
         ]);
 
@@ -69,15 +69,28 @@ class CitaController extends Controller
         $request->validate([
             'servicio_id' => 'required|exists:servicios,id',
             'horario_id' => 'required|exists:horarios,id',
-            'fecha' => 'required|date|after_or_equal:today',
+            'fecha' => 'required|date|after_or_equal:today|before_or_equal:' . Carbon::today()->addMonths(3)->format('Y-m-d'),
             'hora' => 'required|date_format:H:i',
             'motivo' => 'nullable|string|max:500',
         ], [
             'servicio_id.required' => 'Debes seleccionar un servicio.',
             'fecha.required' => 'Debes seleccionar una fecha.',
             'fecha.after_or_equal' => 'No puedes agendar en una fecha pasada.',
+            'fecha.before_or_equal' => 'Solo puedes agendar hasta 3 meses por adelantado.',
             'hora.required' => 'Debes seleccionar un horario.',
         ]);
+
+        // Límite de citas activas por paciente (evita saturar la agenda)
+        $citasActivas = Cita::where('paciente_id', auth()->id())
+            ->whereIn('status', ['pendiente', 'confirmada'])
+            ->whereDate('fecha', '>=', Carbon::today())
+            ->count();
+
+        if ($citasActivas >= 3) {
+            return back()->with('error',
+                'Ya tienes 3 citas activas. Para agendar otra, espera a que te atiendan o cancela alguna.'
+            )->withInput();
+        }
 
         // Verificar que el espacio siga disponible (evitar doble reserva)
         $espacios = $this->disponibilidad->espaciosDisponibles(
