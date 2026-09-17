@@ -33,6 +33,15 @@ class LoginController extends Controller
         ];
 
         if (Auth::attempt($credenciales)) {
+            // Las cuentas desactivadas no pueden iniciar sesión
+            if (!Auth::user()->activo) {
+                Auth::logout();
+
+                return back()->withErrors([
+                    'identificador' => 'Tu cuenta está desactivada. Comunícate con la clínica.',
+                ])->onlyInput('identificador');
+            }
+
             $request->session()->regenerate();
 
             return match (Auth::user()->role) {

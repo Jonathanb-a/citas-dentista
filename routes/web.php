@@ -8,6 +8,7 @@ use App\Http\Controllers\Admin\EspecialidadController;
 use App\Http\Controllers\Admin\ServicioController;
 use App\Http\Controllers\Admin\HorarioController;
 use App\Http\Controllers\Admin\CitaController as AdminCitaController;
+use App\Http\Controllers\Admin\PacienteController;
 use App\Http\Controllers\Asistente\DashboardController as AsistenteDashboardController;
 use App\Http\Controllers\Asistente\CitaController as AsistenteCitaController;
 use App\Http\Controllers\Paciente\CitaController;
@@ -82,6 +83,12 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->grou
     Route::patch('/citas/{id}/confirmar', [AdminCitaController::class, 'confirmar'])->name('citas.confirmar');
     Route::patch('/citas/{id}/atender', [AdminCitaController::class, 'atender'])->name('citas.atender');
     Route::patch('/citas/{id}/cancelar', [AdminCitaController::class, 'cancelar'])->name('citas.cancelar');
+
+    // Pacientes
+    Route::get('/pacientes', [PacienteController::class, 'index'])->name('pacientes.index');
+    Route::get('/pacientes/{id}', [PacienteController::class, 'show'])->name('pacientes.show');
+    Route::put('/pacientes/{id}', [PacienteController::class, 'update'])->name('pacientes.update');
+    Route::patch('/pacientes/{id}/toggle', [PacienteController::class, 'toggle'])->name('pacientes.toggle');
 });
 
 // Rutas Asistente — solo asistente
