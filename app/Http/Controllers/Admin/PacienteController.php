@@ -4,9 +4,11 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\Expediente;
+use App\Models\Odontograma;
 use App\Models\User;
 use App\Services\PasswordTemporalService;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
 
 class PacienteController extends Controller
@@ -52,6 +54,7 @@ class PacienteController extends Controller
         $paciente = $this->pacientes()
             ->with([
                 'expediente.actualizadoPor',
+                'expediente.odontograma.actualizadoPor',
                 'passwordRestablecidaPor',
                 'citas' => function ($q) {
                     $q->orderBy('fecha', 'desc')->orderBy('hora', 'desc');
@@ -173,6 +176,56 @@ class PacienteController extends Controller
 
         return redirect()->route('admin.pacientes.show', $paciente->id)
             ->with('success', 'Expediente actualizado correctamente.');
+    }
+
+    // Guardar el odontograma completo: llega el estado de los 32 dientes
+    public function actualizarOdontograma(Request $request, $id)
+    {
+        $paciente = $this->pacientes()->with('expediente')->findOrFail($id);
+
+        $datos = $request->validateWithBag('odontograma', [
+            'dientes' => 'array',
+            'dientes.*.estado' => ['nullable', Rule::in(array_keys(Odontograma::ESTADOS))],
+            'dientes.*.nota' => 'nullable|string|max:500',
+        ], [
+            'dientes.*.estado.in' => 'Uno de los dientes tiene un estado que no existe.',
+            'dientes.*.nota.max' => 'Las notas de cada diente no pueden tener más de 500 caracteres.',
+        ]);
+
+        // Solo se aceptan números FDI de dentición permanente
+        $numerosValidos = Odontograma::numerosValidos();
+        $dientes = collect($datos['dientes'] ?? [])
+            ->filter(fn ($diente, $numero) => in_array((int) $numero, $numerosValidos, true));
+
+        if ($dientes->count() !== count($datos['dientes'] ?? [])) {
+            return back()->withErrors(['dientes' => 'Se recibió un diente que no existe en la dentadura adulta.'], 'odontograma');
+        }
+
+        $expediente = Expediente::firstOrCreate(['paciente_id' => $paciente->id]);
+
+        DB::transaction(function () use ($dientes, $expediente) {
+            foreach ($dientes as $numero => $diente) {
+                $estado = $diente['estado'] ?? null;
+
+                // Sano no se guarda: se borra la marca que hubiera
+                if (!$estado || $estado === 'sano') {
+                    $expediente->odontograma()->where('numero_diente', (int) $numero)->delete();
+                    continue;
+                }
+
+                $expediente->odontograma()->updateOrCreate(
+                    ['numero_diente' => (int) $numero],
+                    [
+                        'estado' => $estado,
+                        'nota' => $diente['nota'] ?? null,
+                        'actualizado_por' => auth()->id(),
+                    ]
+                );
+            }
+        });
+
+        return redirect()->route('admin.pacientes.show', $paciente->id)
+            ->with('success', 'Odontograma actualizado correctamente.');
     }
 
     // Generar una contraseña temporal nueva para el paciente

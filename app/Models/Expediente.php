@@ -68,6 +68,12 @@ class Expediente extends Model
         return $this->belongsTo(User::class, 'paciente_id');
     }
 
+    // Dientes marcados del odontograma (los sanos no se guardan)
+    public function odontograma()
+    {
+        return $this->hasMany(Odontograma::class);
+    }
+
     // Usuario que hizo el último cambio al expediente
     public function actualizadoPor()
     {

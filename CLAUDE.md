@@ -8,7 +8,25 @@ Entorno local: Laragon. Despliegue: Railway.
 - MVC + capa de servicios (app/Services/)
 - DisponibilidadService: calcula espacios libres de cita
 - CitaManualService: crear y reagendar citas (lo usan admin y asistente)
+- PasswordTemporalService: genera y asigna contraseñas temporales (alta de
+  paciente en cita manual, restablecer contraseña y módulo Personal)
 - Middleware CheckRole para los roles: admin, asistente, paciente
+
+## Expediente clínico
+- Fase 1 (lista): historia clínica NOM-013-SSA2 en la tabla expedientes
+- Fase 2 (lista): odontograma en la tabla `odontograma`, un registro por
+  diente marcado; sin registro = diente sano. Estados y colores viven en
+  Odontograma::ESTADOS (única fuente de verdad de validación, leyenda,
+  resumen y modal)
+- Fase 3 (pendiente): notas de evolución y dentición infantil
+  - Los números FDI temporales (51-55, 61-65, 71-75, 81-85) ya caben en
+    `odontograma.numero_diente` sin migración: solo hay que ampliar
+    Odontograma::numerosValidos() y dibujar 20 dientes
+  - El caso a resolver es la **dentición mixta**: entre los 6 y los 12 años
+    el mismo paciente tiene dientes permanentes y temporales a la vez, así
+    que el odontograma tendrá que mostrar ambas denticiones juntas, no un
+    interruptor que alterne entre una y otra
+  - La clínica sí atiende niños (servicio "Ortodoncia maxilar")
 
 ## Convenciones
 - Todo en español (variables, mensajes, comentarios)

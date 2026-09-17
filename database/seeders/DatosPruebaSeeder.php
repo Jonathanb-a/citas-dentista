@@ -107,7 +107,7 @@ class DatosPruebaSeeder extends Seeder
         $paciente->save();
 
         // Expediente del paciente
-        Expediente::create([
+        $expediente = Expediente::create([
             'paciente_id' => $paciente->id,
             'fecha_nacimiento' => '1995-05-15',
             'sexo' => 'femenino',
@@ -132,6 +132,24 @@ class DatosPruebaSeeder extends Seeder
             'notas_doctora' => 'Paciente refiere apretar los dientes al dormir. Revalorar en 3 meses.',
             'observaciones' => 'Prefiere citas por la tarde.',
         ]);
+
+        // Odontograma de ejemplo, coherente con su diagnóstico
+        $doctora = User::where('email', 'admin@dentissa.com')->first();
+
+        foreach ([
+            36 => ['estado' => 'caries', 'nota' => 'Cara oclusal. Pendiente resina.'],
+            16 => ['estado' => 'obturado', 'nota' => 'Resina colocada en 2023.'],
+            26 => ['estado' => 'corona', 'nota' => null],
+            48 => ['estado' => 'ausente', 'nota' => 'Extraído en 2022.'],
+            11 => ['estado' => 'fracturado', 'nota' => 'Desgaste por bruxismo en borde incisal.'],
+        ] as $numeroDiente => $diente) {
+            $expediente->odontograma()->create([
+                'numero_diente' => $numeroDiente,
+                'estado' => $diente['estado'],
+                'nota' => $diente['nota'],
+                'actualizado_por' => $doctora?->id,
+            ]);
+        }
 
                 Servicio::create([
             'especialidad_id' => $general->id,

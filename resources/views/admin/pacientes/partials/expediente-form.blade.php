@@ -19,6 +19,11 @@
             'titulo' => 'Diagnóstico y plan',
             'campos' => ['padecimiento_actual', 'diagnostico', 'plan_tratamiento', 'notas_doctora', 'observaciones'],
         ],
+        // El odontograma tiene su propio formulario, aparte del de la historia clínica
+        'odontograma' => [
+            'titulo' => 'Odontograma',
+            'campos' => [],
+        ],
     ];
 
     // Si hubo errores, abrir la pestaña que contiene el primero
@@ -29,6 +34,11 @@
             $pestanaInicial = $clave;
             break;
         }
+    }
+
+    // Un error del odontograma abre su pestaña
+    if ($errors->odontograma->any()) {
+        $pestanaInicial = 'odontograma';
     }
 
     $claseInput = 'w-full px-4 py-3 rounded-xl border text-sm text-gray-700 focus:outline-none focus:border-[#d75078] focus:ring-2 focus:ring-[#fde7ed] transition-all duration-300';
@@ -70,14 +80,16 @@
                     :class="pestana === '{{ $clave }}' ? 'bg-[#fde7ed] text-[#d75078]' : 'text-gray-400 hover:text-[#d75078] hover:bg-[#FFF6F6]'"
                     class="relative whitespace-nowrap px-4 py-2 rounded-xl text-sm font-medium transition-all duration-200">
                 {{ $pestana['titulo'] }}
-                @if(collect($pestana['campos'])->contains(fn ($campo) => $erroresExpediente->has($campo)))
+                @if(collect($pestana['campos'])->contains(fn ($campo) => $erroresExpediente->has($campo)) || ($clave === 'odontograma' && $errors->odontograma->any()))
                     <span class="absolute top-1.5 right-1.5 w-2 h-2 bg-red-500 rounded-full"></span>
                 @endif
             </button>
         @endforeach
     </div>
 
-    <form method="POST" action="{{ route('admin.pacientes.expediente.update', $paciente->id) }}">
+    {{-- Historia clínica: un solo formulario para sus cuatro pestañas --}}
+    <form method="POST" action="{{ route('admin.pacientes.expediente.update', $paciente->id) }}"
+          x-show="pestana !== 'odontograma'" x-cloak>
         @csrf
         @method('PUT')
 
@@ -191,4 +203,9 @@
             </button>
         </div>
     </form>
+
+    {{-- Odontograma: formulario propio, hermano del anterior --}}
+    <div x-show="pestana === 'odontograma'" x-cloak>
+        @include('admin.pacientes.partials.odontograma')
+    </div>
 </div>
