@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\Expediente;
 use App\Models\User;
+use App\Services\PasswordTemporalService;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
 
@@ -51,6 +52,7 @@ class PacienteController extends Controller
         $paciente = $this->pacientes()
             ->with([
                 'expediente.actualizadoPor',
+                'passwordRestablecidaPor',
                 'citas' => function ($q) {
                     $q->orderBy('fecha', 'desc')->orderBy('hora', 'desc');
                 },
@@ -81,6 +83,8 @@ class PacienteController extends Controller
             'apellidos' => 'required|string|max:255',
             'email' => ['required', 'email', 'max:255', Rule::unique('users', 'email')->ignore($paciente->id)],
             'telefono' => ['nullable', 'string', 'max:20', Rule::unique('users', 'telefono')->ignore($paciente->id)],
+            // Opcional: en pacientes antiguos puede no tenerse el dato
+            'sexo' => 'nullable|in:masculino,femenino',
         ], [
             'name.required' => 'El nombre es obligatorio.',
             'apellidos.required' => 'Los apellidos son obligatorios.',
@@ -89,6 +93,7 @@ class PacienteController extends Controller
             'email.unique' => 'Ya existe otro usuario con ese correo.',
             'telefono.max' => 'El teléfono no puede tener más de 20 caracteres.',
             'telefono.unique' => 'Ya existe otro usuario con ese teléfono.',
+            'sexo.in' => 'Selecciona una opción válida de sexo.',
         ]);
 
         $paciente->update([
@@ -96,6 +101,7 @@ class PacienteController extends Controller
             'apellidos' => $request->apellidos,
             'email' => $request->email,
             'telefono' => $request->telefono,
+            'sexo' => $request->sexo,
         ]);
 
         return redirect()->route('admin.pacientes.show', $paciente->id)
@@ -167,6 +173,18 @@ class PacienteController extends Controller
 
         return redirect()->route('admin.pacientes.show', $paciente->id)
             ->with('success', 'Expediente actualizado correctamente.');
+    }
+
+    // Generar una contraseña temporal nueva para el paciente
+    public function restablecerPassword($id, PasswordTemporalService $passwordTemporal)
+    {
+        $paciente = $this->pacientes()->findOrFail($id);
+
+        $panel = $passwordTemporal->restablecer($paciente, auth()->id());
+
+        return back()
+            ->with('success', 'Contraseña restablecida. La anterior ya no funciona.')
+            ->with('password_temporal', $panel);
     }
 
     // Activar / desactivar paciente

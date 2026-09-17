@@ -37,6 +37,14 @@
                     </svg>
                     Editar
                 </button>
+                <form method="POST" action="{{ route('admin.pacientes.restablecer-password', $paciente->id) }}" class="flex-1 sm:flex-none"
+                      onsubmit="return confirm('¿Generar una contraseña nueva para este paciente? La actual dejará de funcionar.');">
+                    @csrf
+                    @method('PATCH')
+                    <button type="submit" class="w-full border border-gray-200 text-gray-600 text-sm font-medium px-5 py-3 rounded-xl hover:bg-[#FFF6F6] hover:text-[#d75078] transition-all duration-300 whitespace-nowrap">
+                        Restablecer contraseña
+                    </button>
+                </form>
                 <form method="POST" action="{{ route('admin.pacientes.toggle', $paciente->id) }}" class="flex-1 sm:flex-none"
                       onsubmit="return confirm('{{ $paciente->activo ? '¿Desactivar a este paciente? Ya no podrá iniciar sesión.' : '¿Activar a este paciente?' }}');">
                     @csrf
@@ -88,6 +96,15 @@
                     <dt class="text-gray-400 text-xs font-medium">CORREO VERIFICADO</dt>
                     <dd class="text-gray-700 text-sm mt-1">{{ $paciente->email_verified_at ? 'Sí' : 'No' }}</dd>
                 </div>
+                @if($paciente->password_restablecida_en)
+                    <div class="sm:col-span-2">
+                        <dt class="text-gray-400 text-xs font-medium">CONTRASEÑA</dt>
+                        <dd class="text-gray-700 text-sm mt-1">
+                            Contraseña restablecida el {{ $paciente->password_restablecida_en->format('d/m/Y h:i A') }}
+                            por {{ $paciente->passwordRestablecidaPor ? trim($paciente->passwordRestablecidaPor->name . ' ' . $paciente->passwordRestablecidaPor->apellidos) : 'un usuario eliminado' }}
+                        </dd>
+                    </div>
+                @endif
             </dl>
         </div>
 
@@ -269,6 +286,15 @@
                     <input type="tel" name="telefono" value="{{ old('telefono', $paciente->telefono) }}" maxlength="20"
                            placeholder="Ej. 5512345678"
                            class="w-full px-4 py-3 rounded-xl border text-sm text-gray-700 focus:outline-none focus:border-[#d75078] focus:ring-2 focus:ring-[#fde7ed] transition-all duration-300 {{ $errors->has('telefono') ? 'border-red-300' : 'border-gray-200' }}">
+                </div>
+
+                {{-- Sexo --}}
+                <div class="flex flex-col gap-1.5">
+                    <span class="text-gray-600 text-sm font-medium">Sexo</span>
+                    @include('partials.selector-sexo', ['nombre' => 'sexo', 'valor' => old('sexo', $sexo)])
+                    @if(!$sexo)
+                        <span class="text-gray-400 text-xs">Sin registrar. Puedes dejarlo vacío si no se tiene el dato.</span>
+                    @endif
                 </div>
 
                 {{-- Botones --}}

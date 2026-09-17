@@ -27,7 +27,7 @@
             </form>
         </div>
     @endif
-    s
+    
     {{-- Próxima cita destacada --}}
     @if($proximaCita)
         <div class="bg-[#d75078] rounded-2xl shadow-sm p-8 mb-8 text-white">

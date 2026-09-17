@@ -249,6 +249,57 @@ class PacienteControllerTest extends TestCase
         $this->assertNull($paciente->fresh()->expediente->embarazada);
     }
 
+    public function test_toggle_embarazada_depende_del_sexo_capturado(): void
+    {
+        $admin = $this->crearUsuario('admin');
+        $paciente = $this->crearUsuario('paciente');
+
+        // Sin dato de sexo: se muestra, no se puede suponer
+        $this->actingAs($admin)->get(route('admin.pacientes.show', $paciente->id))
+            ->assertSee('name="embarazada"', false);
+
+        // Capturado como femenino desde el modal de edición
+        $this->actingAs($admin)->put(route('admin.pacientes.update', $paciente->id), [
+            'name' => $paciente->name,
+            'apellidos' => $paciente->apellidos,
+            'email' => $paciente->email,
+            'sexo' => 'femenino',
+        ])->assertSessionHasNoErrors();
+        $this->actingAs($admin)->get(route('admin.pacientes.show', $paciente->id))
+            ->assertSee('name="embarazada"', false);
+
+        $this->actingAs($admin)->put(route('admin.pacientes.expediente.update', $paciente->id), ['embarazada' => '1']);
+        $this->assertTrue($paciente->fresh()->expediente->embarazada);
+
+        // Corregido a masculino: se oculta y ya no se guarda
+        $this->actingAs($admin)->put(route('admin.pacientes.update', $paciente->id), [
+            'name' => $paciente->name,
+            'apellidos' => $paciente->apellidos,
+            'email' => $paciente->email,
+            'sexo' => 'masculino',
+        ])->assertSessionHasNoErrors();
+        $this->actingAs($admin)->get(route('admin.pacientes.show', $paciente->id))
+            ->assertDontSee('name="embarazada"', false);
+
+        $this->actingAs($admin)->put(route('admin.pacientes.expediente.update', $paciente->id), ['embarazada' => '1']);
+        $this->assertNull($paciente->fresh()->expediente->embarazada);
+    }
+
+    public function test_modal_permite_sexo_vacio_pero_no_valores_invalidos(): void
+    {
+        $admin = $this->crearUsuario('admin');
+        $paciente = $this->crearUsuario('paciente');
+        $datos = ['name' => 'Ana', 'apellidos' => 'Soto', 'email' => $paciente->email];
+
+        $this->actingAs($admin)->put(route('admin.pacientes.update', $paciente->id), $datos)
+            ->assertSessionHasNoErrors();
+        $this->assertNull($paciente->fresh()->sexo);
+
+        $this->actingAs($admin)->put(route('admin.pacientes.update', $paciente->id), $datos + ['sexo' => 'otro'])
+            ->assertSessionHasErrors('sexo');
+        $this->assertNull($paciente->fresh()->sexo);
+    }
+
     public function test_no_se_puede_editar_expediente_de_un_no_paciente(): void
     {
         $admin = $this->crearUsuario('admin');

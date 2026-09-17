@@ -9,8 +9,10 @@ use App\Http\Controllers\Admin\ServicioController;
 use App\Http\Controllers\Admin\HorarioController;
 use App\Http\Controllers\Admin\CitaController as AdminCitaController;
 use App\Http\Controllers\Admin\PacienteController;
+use App\Http\Controllers\Admin\PersonalController;
 use App\Http\Controllers\Asistente\DashboardController as AsistenteDashboardController;
 use App\Http\Controllers\Asistente\CitaController as AsistenteCitaController;
+use App\Http\Controllers\Asistente\PacienteController as AsistentePacienteController;
 use App\Http\Controllers\Paciente\CitaController;
 use App\Http\Controllers\Paciente\DashboardController as PacienteDashboardController;
 
@@ -90,6 +92,14 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->grou
     Route::put('/pacientes/{id}', [PacienteController::class, 'update'])->name('pacientes.update');
     Route::put('/pacientes/{id}/expediente', [PacienteController::class, 'actualizarExpediente'])->name('pacientes.expediente.update');
     Route::patch('/pacientes/{id}/toggle', [PacienteController::class, 'toggle'])->name('pacientes.toggle');
+    Route::patch('/pacientes/{id}/restablecer-password', [PacienteController::class, 'restablecerPassword'])->name('pacientes.restablecer-password');
+
+    // Personal: cuentas de doctora y asistente
+    Route::get('/personal', [PersonalController::class, 'index'])->name('personal.index');
+    Route::post('/personal', [PersonalController::class, 'store'])->name('personal.store');
+    Route::put('/personal/{id}', [PersonalController::class, 'update'])->name('personal.update');
+    Route::patch('/personal/{id}/toggle', [PersonalController::class, 'toggle'])->name('personal.toggle');
+    Route::patch('/personal/{id}/restablecer-password', [PersonalController::class, 'restablecerPassword'])->name('personal.restablecer-password');
 });
 
 // Rutas Asistente — solo asistente
@@ -105,6 +115,7 @@ Route::middleware(['auth', 'role:asistente'])->prefix('asistente')->name('asiste
     Route::patch('/citas/{id}/confirmar', [AsistenteCitaController::class, 'confirmar'])->name('citas.confirmar');
     Route::patch('/citas/{id}/atender', [AsistenteCitaController::class, 'atender'])->name('citas.atender');
     Route::patch('/citas/{id}/cancelar', [AsistenteCitaController::class, 'cancelar'])->name('citas.cancelar');
+    Route::patch('/pacientes/{id}/restablecer-password', [AsistentePacienteController::class, 'restablecerPassword'])->name('pacientes.restablecer-password');
 });
 
 // Rutas Paciente — solo paciente

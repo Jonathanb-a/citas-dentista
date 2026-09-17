@@ -7,16 +7,19 @@ use App\Models\User;
 use App\Models\Expediente;
 use App\Models\HistorialCita;
 use App\Services\DisponibilidadService;
+use App\Services\PasswordTemporalService;
 use Illuminate\Support\Facades\Hash;
 use Carbon\Carbon;
 
 class CitaManualService
 {
     protected $disponibilidad;
+    protected $passwordTemporal;
 
-    public function __construct(DisponibilidadService $disponibilidad)
+    public function __construct(DisponibilidadService $disponibilidad, PasswordTemporalService $passwordTemporal)
     {
         $this->disponibilidad = $disponibilidad;
+        $this->passwordTemporal = $passwordTemporal;
     }
 
     /**
@@ -26,17 +29,18 @@ class CitaManualService
     public function crear(array $datos, $creadoPor)
     {
         // 1. Determinar el paciente
-                 $passwordTemporal = null;
+        $panelPassword = null;
 
         if ($datos['tipo_paciente'] === 'nuevo') {
             // Contraseña temporal aleatoria (única por paciente)
-            $passwordTemporal = \Illuminate\Support\Str::random(10);
+            $passwordTemporal = $this->passwordTemporal->generar();
 
             $paciente = new User();
             $paciente->name = $datos['nuevo_nombre'];
             $paciente->apellidos = $datos['nuevo_apellidos'];
             $paciente->telefono = $datos['nuevo_telefono'] ?? null;
             $paciente->email = $datos['nuevo_email'];
+            $paciente->sexo = $datos['nuevo_sexo'];
             $paciente->password = Hash::make($passwordTemporal);
             $paciente->role = 'paciente';   // asignado explícitamente, no por fillable
             $paciente->activo = true;
@@ -45,6 +49,7 @@ class CitaManualService
             // Crear su expediente vacío
             Expediente::create(['paciente_id' => $paciente->id]);
 
+            $panelPassword = $this->passwordTemporal->panel($paciente, $passwordTemporal);
             $pacienteId = $paciente->id;
         } else {
             // Usar paciente existente
@@ -90,7 +95,7 @@ class CitaManualService
                 'descripcion' => 'Cita creada manualmente por ' . auth()->user()->name . '.',
             ]);
 
-            return ['cita' => $cita, 'password_temporal' => $passwordTemporal];
+            return ['cita' => $cita, 'password_temporal' => $panelPassword];
 
         } catch (\Illuminate\Database\QueryException $e) {
             return ['error' => 'Ese horario acaba de ser ocupado. Por favor elige otro.'];

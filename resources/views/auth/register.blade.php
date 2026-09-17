@@ -119,6 +119,18 @@
                     @enderror
                 </div>
 
+                {{-- Sexo --}}
+                <div class="flex flex-col gap-1.5">
+                    <span class="text-gray-600 text-sm font-medium"
+                          style="font-family: 'Montserrat', sans-serif;">
+                        Sexo
+                    </span>
+                    @include('partials.selector-sexo', ['nombre' => 'sexo', 'valor' => old('sexo'), 'requerido' => true])
+                    @error('sexo')
+                        <span class="text-red-500 text-xs">{{ $message }}</span>
+                    @enderror
+                </div>
+
                 {{-- Contraseña --}}
                 <div class="flex flex-col gap-1.5">
                     <label class="text-gray-600 text-sm font-medium"

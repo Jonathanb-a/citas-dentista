@@ -47,7 +47,7 @@
                             class="w-full px-4 py-3 rounded-xl border border-gray-200 text-sm text-gray-700 focus:outline-none focus:border-[#d75078] focus:ring-2 focus:ring-[#fde7ed] transition-all duration-300">
                         <option value="">Selecciona un paciente</option>
                         @foreach($pacientes as $paciente)
-                            <option value="{{ $paciente->id }}">{{ $paciente->name }} {{ $paciente->apellidos }} — {{ $paciente->telefono }}</option>
+                            <option value="{{ $paciente->id }}" @selected(old('paciente_id') == $paciente->id)>{{ $paciente->name }} {{ $paciente->apellidos }} — {{ $paciente->telefono }}</option>
                         @endforeach
                     </select>
                 </div>
@@ -55,25 +55,29 @@
                 <div x-show="tipoPaciente === 'nuevo'" x-cloak class="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div class="flex flex-col gap-1.5">
                         <label class="text-gray-600 text-sm font-medium">Nombre</label>
-                        <input type="text" name="nuevo_nombre"
+                        <input type="text" name="nuevo_nombre" value="{{ old('nuevo_nombre') }}"
                                class="w-full px-4 py-3 rounded-xl border border-gray-200 text-sm text-gray-700 focus:outline-none focus:border-[#d75078] focus:ring-2 focus:ring-[#fde7ed] transition-all duration-300">
                     </div>
                     <div class="flex flex-col gap-1.5">
                         <label class="text-gray-600 text-sm font-medium">Apellidos</label>
-                        <input type="text" name="nuevo_apellidos"
+                        <input type="text" name="nuevo_apellidos" value="{{ old('nuevo_apellidos') }}"
                                class="w-full px-4 py-3 rounded-xl border border-gray-200 text-sm text-gray-700 focus:outline-none focus:border-[#d75078] focus:ring-2 focus:ring-[#fde7ed] transition-all duration-300">
                     </div>
                     <div class="flex flex-col gap-1.5">
                         <label class="text-gray-600 text-sm font-medium">Teléfono</label>
-                        <input type="text" name="nuevo_telefono"
+                        <input type="text" name="nuevo_telefono" value="{{ old('nuevo_telefono') }}"
                                class="w-full px-4 py-3 rounded-xl border border-gray-200 text-sm text-gray-700 focus:outline-none focus:border-[#d75078] focus:ring-2 focus:ring-[#fde7ed] transition-all duration-300">
                     </div>
                     <div class="flex flex-col gap-1.5">
                         <label class="text-gray-600 text-sm font-medium">Correo</label>
-                        <input type="email" name="nuevo_email"
+                        <input type="email" name="nuevo_email" value="{{ old('nuevo_email') }}"
                                class="w-full px-4 py-3 rounded-xl border border-gray-200 text-sm text-gray-700 focus:outline-none focus:border-[#d75078] focus:ring-2 focus:ring-[#fde7ed] transition-all duration-300">
                     </div>
-                    <p class="text-gray-400 text-xs md:col-span-2">Se creará una cuenta con contraseña temporal: <strong>paciente123</strong></p>
+                    <div class="flex flex-col gap-1.5 md:col-span-2">
+                        <span class="text-gray-600 text-sm font-medium">Sexo</span>
+                        @include('partials.selector-sexo', ['nombre' => 'nuevo_sexo', 'valor' => old('nuevo_sexo')])
+                    </div>
+                    <p class="text-gray-400 text-xs md:col-span-2">Se creará su cuenta con una contraseña temporal que se mostrará al guardar la cita.</p>
                 </div>
             </div>
 
@@ -156,7 +160,8 @@
     <script>
         function crearCita() {
             return {
-                tipoPaciente: 'existente',
+                // Tras un error de validación se conserva el tipo elegido
+                tipoPaciente: @json(old('tipo_paciente') === 'nuevo' ? 'nuevo' : 'existente'),
                 servicioId: null,
                 duracion: 0,
                 fecha: '',

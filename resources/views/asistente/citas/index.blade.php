@@ -97,6 +97,13 @@
                             </td>
                             <td class="py-4 px-4">
                                 <div class="flex items-center justify-end gap-2">
+                                    {{-- Contraseña temporal del paciente, por si no puede entrar --}}
+                                    <form method="POST" action="{{ route('asistente.pacientes.restablecer-password', $cita->paciente->id) }}"
+                                          onsubmit="return confirm('¿Generar una contraseña nueva para {{ $cita->paciente->name }}? La actual dejará de funcionar.');">
+                                        @csrf
+                                        @method('PATCH')
+                                        <button type="submit" class="px-3 py-1.5 border border-gray-200 text-gray-600 text-xs font-medium rounded-lg hover:bg-[#FFF6F6] hover:text-[#d75078] transition-all duration-200 whitespace-nowrap">Contraseña</button>
+                                    </form>
                                     @if($cita->status === 'pendiente')
                                         <form method="POST" action="{{ route('asistente.citas.confirmar', $cita->id) }}">
                                             @csrf
@@ -119,9 +126,6 @@
                                             @method('PATCH')
                                             <button type="submit" class="px-3 py-1.5 bg-red-50 text-red-600 text-xs font-medium rounded-lg hover:bg-red-100 transition-all duration-200">Cancelar</button>
                                         </form>
-                                    @endif
-                                    @if(in_array($cita->status, ['atendida', 'cancelada']))
-                                        <span class="text-gray-300 text-xs">Sin acciones</span>
                                     @endif
                                 </div>
                             </td>
@@ -159,8 +163,18 @@
                     </div>
                     <p class="text-gray-500 text-sm">{{ $cita->servicio->nombre }}</p>
 
+                    <div class="flex flex-wrap gap-2 pt-2 border-t border-gray-50">
+                        {{-- Contraseña temporal del paciente, por si no puede entrar --}}
+                        <form method="POST" action="{{ route('asistente.pacientes.restablecer-password', $cita->paciente->id) }}" class="flex-1 min-w-[90px]"
+                              onsubmit="return confirm('¿Generar una contraseña nueva para {{ $cita->paciente->name }}? La actual dejará de funcionar.');">
+                            @csrf
+                            @method('PATCH')
+                            <button type="submit" class="w-full px-3 py-2 border border-gray-200 text-gray-600 text-xs font-medium rounded-lg">Contraseña</button>
+                        </form>
+                    </div>
+
                     @if(!in_array($cita->status, ['atendida', 'cancelada']))
-                        <div class="flex flex-wrap gap-2 pt-2 border-t border-gray-50">
+                        <div class="flex flex-wrap gap-2">
                             @if($cita->status === 'pendiente')
                                 <form method="POST" action="{{ route('asistente.citas.confirmar', $cita->id) }}" class="flex-1 min-w-[90px]">
                                     @csrf

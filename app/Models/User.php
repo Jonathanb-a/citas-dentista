@@ -34,6 +34,7 @@ class User extends Authenticatable implements MustVerifyEmail
             'password' => 'hashed',
             'fecha_nacimiento' => 'date',
             'activo' => 'boolean',
+            'password_restablecida_en' => 'datetime',
         ];
     }
 
@@ -49,6 +50,12 @@ class User extends Authenticatable implements MustVerifyEmail
     }
 
     // Helpers de roles
+    // Quién restableció por última vez la contraseña de esta cuenta
+    public function passwordRestablecidaPor()
+    {
+        return $this->belongsTo(User::class, 'password_restablecida_por');
+    }
+
     public function esAdmin()
     {
         return $this->role === 'admin';

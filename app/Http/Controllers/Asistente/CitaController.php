@@ -70,8 +70,8 @@ class CitaController extends Controller
             'nuevo_nombre' => 'required_if:tipo_paciente,nuevo|nullable|string|max:255',
             'nuevo_apellidos' => 'required_if:tipo_paciente,nuevo|nullable|string|max:255',
             'nuevo_email' => 'required_if:tipo_paciente,nuevo|nullable|email|unique:users,email',
-            'nuevo_telefono.unique' => 'Ya existe un paciente con ese teléfono.',
             'nuevo_telefono' => 'nullable|string|max:20|unique:users,telefono',
+            'nuevo_sexo' => 'required_if:tipo_paciente,nuevo|nullable|in:masculino,femenino',
             'servicio_id' => 'required|exists:servicios,id',
             'horario_id' => 'required|exists:horarios,id',
             'fecha' => 'required|date|after_or_equal:today',
@@ -80,6 +80,9 @@ class CitaController extends Controller
             'motivo' => 'nullable|string|max:500',
         ], [
             'nuevo_email.unique' => 'Ya existe un paciente con ese correo.',
+            'nuevo_telefono.unique' => 'Ya existe un paciente con ese teléfono.',
+            'nuevo_sexo.required_if' => 'Selecciona el sexo del paciente.',
+            'nuevo_sexo.in' => 'Selecciona una opción válida de sexo.',
         ]);
 
         $resultado = $this->citaManual->crear($request->all(), auth()->id());
@@ -88,15 +91,15 @@ class CitaController extends Controller
             return back()->with('error', $resultado['error'])->withInput();
         }
 
-        $mensaje = 'Cita creada correctamente.';
+        $redireccion = redirect()->route('asistente.citas.index')
+            ->with('success', 'Cita creada correctamente.');
 
-        // Si se creó un paciente nuevo, mostrar su contraseña temporal
+        // La contraseña del paciente nuevo va en un panel aparte que no se desvanece
         if (!empty($resultado['password_temporal'])) {
-            $mensaje .= ' Contraseña temporal del paciente: ' . $resultado['password_temporal']
-                     . ' — anótala y compártela con él (no se volverá a mostrar).';
+            $redireccion->with('password_temporal', $resultado['password_temporal']);
         }
 
-        return redirect()->route('asistente.citas.index')->with('success', $mensaje);
+        return $redireccion;
     }
 
     // Calcular disponibilidad (AJAX)

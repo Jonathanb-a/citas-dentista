@@ -50,6 +50,15 @@
                 Pacientes
             </a>
 
+            {{-- Personal --}}
+            <a href="{{ route('admin.personal.index') }}"
+               class="flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-all duration-300 {{ request()->routeIs('admin.personal.*') ? 'bg-[#fde7ed] text-[#d75078]' : 'text-gray-500 hover:bg-[#fde7ed] hover:text-[#d75078]' }}">
+                <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
+                </svg>
+                Personal
+            </a>
+
             {{-- Horarios --}}
 <a href="{{ route('admin.horarios.index') }}"
    class="flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-all duration-300 {{ request()->routeIs('admin.horarios.*') ? 'bg-[#fde7ed] text-[#d75078]' : 'text-gray-500 hover:bg-[#fde7ed] hover:text-[#d75078]' }}">
@@ -116,6 +125,9 @@
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/>
             </svg>
         </button>
+
+        {{-- Contraseña temporal --}}
+        @include('partials.password-temporal')
 
         {{-- Mensaje de exito --}}
         @if(session('success'))

@@ -23,6 +23,7 @@ class RegisterController extends Controller
             'apellidos'             => 'required|string|max:255',
             'email'                 => 'required|email|unique:users,email',
             'telefono'              => 'required|string|max:20|unique:users,telefono',
+            'sexo'                  => 'required|in:masculino,femenino',
             'password'              => 'required|min:8|confirmed',
         ], [
             'name.required'         => 'El nombre es obligatorio.',
@@ -32,7 +33,9 @@ class RegisterController extends Controller
             'email.unique'          => 'Este correo ya está registrado.',
             'telefono.required'     => 'El teléfono es obligatorio.',
             'telefono.unique'       => 'Ese teléfono ya está registrado.',
-            'password.required'     => 'La contraseña es obligatoria.',
+            'sexo.required'         => 'Selecciona tu sexo.',
+            'sexo.in'               => 'Selecciona una opción válida de sexo.',
+            'password.required'     =>'La contraseña es obligatoria.',
             'password.min'          => 'La contraseña debe tener al menos 8 caracteres.',
             'password.confirmed'    => 'Las contraseñas no coinciden.',
         ]);
@@ -42,6 +45,7 @@ class RegisterController extends Controller
         $user->apellidos = $request->apellidos;
         $user->email     = $request->email;
         $user->telefono  = $request->telefono;
+        $user->sexo      = $request->sexo;
         $user->password  = Hash::make($request->password);
         $user->role      = 'paciente';   // asignado en código, nunca desde el formulario
         $user->activo    = true;
