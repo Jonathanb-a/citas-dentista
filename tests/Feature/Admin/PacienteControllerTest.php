@@ -160,5 +160,104 @@ class PacienteControllerTest extends TestCase
         $paciente = $this->crearUsuario('paciente');
 
         $this->actingAs($paciente)->get(route('admin.pacientes.index'))->assertForbidden();
+        $this->actingAs($paciente)->put(route('admin.pacientes.expediente.update', $paciente->id), [
+            'diagnostico' => 'Intento no autorizado',
+        ])->assertForbidden();
+        $this->assertDatabaseCount('expedientes', 0);
+    }
+
+    public function test_actualizar_expediente_lo_crea_si_no_existe_y_registra_quien_lo_edito(): void
+    {
+        $admin = $this->crearUsuario('admin', ['name' => 'Doctora', 'apellidos' => 'Ramírez']);
+        $paciente = $this->crearUsuario('paciente');
+
+        $this->actingAs($admin)->put(route('admin.pacientes.expediente.update', $paciente->id), [
+            'direccion' => 'Av. Principal 10, Lázaro Cárdenas, Michoacán',
+            'tipo_sangre' => 'O+',
+            'fuma' => '1',
+            'frecuencia_cepillado' => '2 veces al día',
+            'diagnostico' => 'Caries en 36',
+        ])->assertRedirect(route('admin.pacientes.show', $paciente->id))
+          ->assertSessionHasNoErrors();
+
+        $expediente = $paciente->fresh()->expediente;
+        $this->assertNotNull($expediente);
+        $this->assertSame('O+', $expediente->tipo_sangre);
+        $this->assertTrue($expediente->fuma);
+        $this->assertSame('Caries en 36', $expediente->diagnostico);
+        $this->assertSame($admin->id, $expediente->actualizado_por);
+        $this->assertNotNull($expediente->ultima_actualizacion);
+
+        $this->actingAs($admin)->get(route('admin.pacientes.show', $paciente->id))
+            ->assertOk()
+            ->assertSee('Caries en 36')
+            ->assertSee('Última actualización:')
+            ->assertSee('por Doctora Ramírez');
+    }
+
+    public function test_actualizar_expediente_existente_no_lo_duplica_y_conserva_campos_previos(): void
+    {
+        $admin = $this->crearUsuario('admin');
+        $paciente = $this->crearUsuario('paciente');
+        Expediente::create([
+            'paciente_id' => $paciente->id,
+            'fecha_nacimiento' => '1995-05-15',
+            'alergias' => 'Penicilina',
+            'bruxismo' => true,
+        ]);
+
+        // Checkbox desmarcado: el formulario solo envía el hidden con "0"
+        $this->actingAs($admin)->put(route('admin.pacientes.expediente.update', $paciente->id), [
+            'alergias' => 'Penicilina y látex',
+            'bruxismo' => '0',
+            'plan_tratamiento' => 'Guarda oclusal',
+        ])->assertSessionHasNoErrors();
+
+        $this->assertDatabaseCount('expedientes', 1);
+        $expediente = $paciente->fresh()->expediente;
+        $this->assertSame('Penicilina y látex', $expediente->alergias);
+        $this->assertFalse($expediente->bruxismo);
+        $this->assertFalse($expediente->usa_hilo_dental);
+        $this->assertSame('Guarda oclusal', $expediente->plan_tratamiento);
+        $this->assertSame('1995-05-15', $expediente->fecha_nacimiento->format('Y-m-d'));
+        $this->assertSame($admin->id, $expediente->actualizado_por);
+    }
+
+    public function test_actualizar_expediente_valida_opciones_cerradas(): void
+    {
+        $admin = $this->crearUsuario('admin');
+        $paciente = $this->crearUsuario('paciente');
+
+        $this->actingAs($admin)->put(route('admin.pacientes.expediente.update', $paciente->id), [
+            'tipo_sangre' => 'Z+',
+            'frecuencia_cepillado' => 'Cada hora',
+            'fuma' => 'tal vez',
+        ])->assertSessionHasErrorsIn('expediente', ['tipo_sangre', 'frecuencia_cepillado', 'fuma']);
+
+        $this->assertDatabaseCount('expedientes', 0);
+    }
+
+    public function test_embarazada_no_aplica_a_pacientes_masculinos(): void
+    {
+        $admin = $this->crearUsuario('admin');
+        $paciente = $this->crearUsuario('paciente', ['sexo' => 'masculino']);
+
+        $this->actingAs($admin)->put(route('admin.pacientes.expediente.update', $paciente->id), [
+            'embarazada' => '1',
+        ])->assertSessionHasNoErrors();
+
+        $this->assertNull($paciente->fresh()->expediente->embarazada);
+    }
+
+    public function test_no_se_puede_editar_expediente_de_un_no_paciente(): void
+    {
+        $admin = $this->crearUsuario('admin');
+        $asistente = $this->crearUsuario('asistente');
+
+        $this->actingAs($admin)->put(route('admin.pacientes.expediente.update', $asistente->id), [
+            'diagnostico' => 'No debería guardarse',
+        ])->assertNotFound();
+
+        $this->assertDatabaseCount('expedientes', 0);
     }
 }

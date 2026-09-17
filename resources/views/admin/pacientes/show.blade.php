@@ -51,10 +51,10 @@
         </div>
     </div>
 
-    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
 
         {{-- Datos personales --}}
-        <div class="bg-white rounded-2xl shadow-sm p-6">
+        <div class="lg:col-span-2 bg-white rounded-2xl shadow-sm p-6">
             <h2 class="font-bold text-gray-800 text-lg mb-4">Datos personales</h2>
             <dl class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
@@ -89,9 +89,12 @@
                     <dd class="text-gray-700 text-sm mt-1">{{ $paciente->email_verified_at ? 'Sí' : 'No' }}</dd>
                 </div>
             </dl>
+        </div>
 
-            {{-- Resumen de citas --}}
-            <div class="grid grid-cols-3 gap-3 mt-6 pt-6 border-t border-gray-50">
+        {{-- Resumen de citas --}}
+        <div class="bg-white rounded-2xl shadow-sm p-6">
+            <h2 class="font-bold text-gray-800 text-lg mb-4">Resumen de citas</h2>
+            <div class="grid grid-cols-3 lg:grid-cols-1 gap-3">
                 <div class="bg-[#FFF6F6] rounded-xl p-3 text-center">
                     <p class="text-[#d75078] text-xl font-bold">{{ $resumen['total'] }}</p>
                     <p class="text-gray-400 text-xs">Citas</p>
@@ -107,34 +110,10 @@
             </div>
         </div>
 
-        {{-- Expediente --}}
-        <div class="bg-white rounded-2xl shadow-sm p-6">
-            <h2 class="font-bold text-gray-800 text-lg mb-4">Expediente</h2>
-            @if(!$expediente)
-                <div class="flex flex-col items-center justify-center py-8 gap-3">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="w-12 h-12 text-gray-200" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
-                    </svg>
-                    <p class="text-gray-400 text-sm">Este paciente aún no tiene expediente</p>
-                </div>
-            @else
-                <dl class="flex flex-col gap-4">
-                    @foreach([
-                        'alergias' => 'ALERGIAS',
-                        'enfermedades' => 'ENFERMEDADES',
-                        'medicamentos' => 'MEDICAMENTOS',
-                        'notas_doctora' => 'NOTAS DE LA DOCTORA',
-                        'observaciones' => 'OBSERVACIONES',
-                    ] as $campo => $etiqueta)
-                        <div>
-                            <dt class="text-gray-400 text-xs font-medium">{{ $etiqueta }}</dt>
-                            <dd class="text-sm mt-1 whitespace-pre-line {{ $expediente->$campo ? 'text-gray-700' : 'text-gray-300' }}">{{ $expediente->$campo ?: 'Sin información' }}</dd>
-                        </div>
-                    @endforeach
-                </dl>
-            @endif
-        </div>
     </div>
+
+    {{-- Expediente clínico --}}
+    @include('admin.pacientes.partials.expediente-form')
 
     {{-- Historial de citas --}}
     <div class="bg-white rounded-2xl shadow-sm p-6">

@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Models\Expediente;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
@@ -49,7 +50,7 @@ class PacienteController extends Controller
     {
         $paciente = $this->pacientes()
             ->with([
-                'expediente',
+                'expediente.actualizadoPor',
                 'citas' => function ($q) {
                     $q->orderBy('fecha', 'desc')->orderBy('hora', 'desc');
                 },
@@ -99,6 +100,73 @@ class PacienteController extends Controller
 
         return redirect()->route('admin.pacientes.show', $paciente->id)
             ->with('success', 'Datos del paciente actualizados correctamente.');
+    }
+
+    // Guardar la historia clínica; si el paciente no tiene expediente, se crea
+    public function actualizarExpediente(Request $request, $id)
+    {
+        $paciente = $this->pacientes()->with('expediente')->findOrFail($id);
+
+        $booleanos = ['embarazada', 'fuma', 'alcohol', 'bruxismo', 'usa_hilo_dental'];
+
+        $datos = $request->validateWithBag('expediente', [
+            'direccion' => 'nullable|string|max:255',
+            'contacto_emergencia_nombre' => 'nullable|string|max:255',
+            'contacto_emergencia_telefono' => 'nullable|string|max:20',
+            'tipo_sangre' => ['nullable', Rule::in(Expediente::TIPOS_SANGRE)],
+            'antecedentes_familiares' => 'nullable|string|max:5000',
+            'alergias' => 'nullable|string|max:5000',
+            'enfermedades' => 'nullable|string|max:5000',
+            'medicamentos' => 'nullable|string|max:5000',
+            'cirugias_previas' => 'nullable|string|max:5000',
+            'frecuencia_cepillado' => ['nullable', Rule::in(Expediente::FRECUENCIAS_CEPILLADO)],
+            'padecimiento_actual' => 'nullable|string|max:5000',
+            'diagnostico' => 'nullable|string|max:5000',
+            'plan_tratamiento' => 'nullable|string|max:5000',
+            'notas_doctora' => 'nullable|string|max:5000',
+            'observaciones' => 'nullable|string|max:5000',
+            'embarazada' => 'nullable|boolean',
+            'fuma' => 'nullable|boolean',
+            'alcohol' => 'nullable|boolean',
+            'bruxismo' => 'nullable|boolean',
+            'usa_hilo_dental' => 'nullable|boolean',
+        ], [
+            'max' => 'El campo :attribute no puede tener más de :max caracteres.',
+            'tipo_sangre.in' => 'Selecciona un tipo de sangre válido.',
+            'frecuencia_cepillado.in' => 'Selecciona una frecuencia de cepillado válida.',
+            'boolean' => 'El campo :attribute debe ser sí o no.',
+        ], [
+            'direccion' => 'dirección',
+            'contacto_emergencia_nombre' => 'nombre del contacto de emergencia',
+            'contacto_emergencia_telefono' => 'teléfono del contacto de emergencia',
+            'antecedentes_familiares' => 'antecedentes heredofamiliares',
+            'cirugias_previas' => 'cirugías previas',
+            'padecimiento_actual' => 'padecimiento actual',
+            'diagnostico' => 'diagnóstico',
+            'plan_tratamiento' => 'plan de tratamiento',
+            'notas_doctora' => 'notas de la doctora',
+            'usa_hilo_dental' => 'usa hilo dental',
+        ]);
+
+        // Un checkbox sin marcar no se envía: se guarda como "no"
+        foreach ($booleanos as $campo) {
+            $datos[$campo] = $request->boolean($campo);
+        }
+
+        // El embarazo no aplica a pacientes de sexo masculino
+        $sexo = $paciente->sexo ?? $paciente->expediente?->sexo;
+        if ($sexo === 'masculino') {
+            $datos['embarazada'] = null;
+        }
+
+        // Trazabilidad: quién y cuándo modificó el expediente
+        $datos['actualizado_por'] = auth()->id();
+        $datos['ultima_actualizacion'] = now();
+
+        Expediente::updateOrCreate(['paciente_id' => $paciente->id], $datos);
+
+        return redirect()->route('admin.pacientes.show', $paciente->id)
+            ->with('success', 'Expediente actualizado correctamente.');
     }
 
     // Activar / desactivar paciente

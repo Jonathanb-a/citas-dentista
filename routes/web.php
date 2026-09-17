@@ -88,6 +88,7 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->grou
     Route::get('/pacientes', [PacienteController::class, 'index'])->name('pacientes.index');
     Route::get('/pacientes/{id}', [PacienteController::class, 'show'])->name('pacientes.show');
     Route::put('/pacientes/{id}', [PacienteController::class, 'update'])->name('pacientes.update');
+    Route::put('/pacientes/{id}/expediente', [PacienteController::class, 'actualizarExpediente'])->name('pacientes.expediente.update');
     Route::patch('/pacientes/{id}/toggle', [PacienteController::class, 'toggle'])->name('pacientes.toggle');
 });
 
