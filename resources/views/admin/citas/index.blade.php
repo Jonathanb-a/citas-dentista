@@ -1,6 +1,45 @@
 <x-admin.layout title="Citas">
 
-    <div x-data="reagendarApp()">
+@php
+    // Si la validación de una nota falló, se reabre su modal con lo que se había escrito
+    $bagNota = collect($errors->getBags())->keys()->first(fn ($bag) => str_starts_with($bag, 'nota_'));
+    $citaConError = $bagNota ? $citas->firstWhere('id', (int) substr($bagNota, strlen('nota_'))) : null;
+
+    $notaInicial = $citaConError ? [
+        'citaId' => $citaConError->id,
+        'paciente' => trim($citaConError->paciente->name . ' ' . $citaConError->paciente->apellidos),
+        'fecha' => \Carbon\Carbon::parse($citaConError->fecha)->format('d/m/Y'),
+        'servicio' => $citaConError->servicio->nombre,
+        'accion' => $citaConError->status === 'atendida' ? 'editar' : 'atender',
+        'campos' => [
+            'procedimiento' => old('procedimiento', ''),
+            'observaciones' => old('observaciones', ''),
+            'indicaciones' => old('indicaciones', ''),
+            'proxima_cita_sugerida' => old('proxima_cita_sugerida', ''),
+        ],
+        'errores' => $errors->{$bagNota}->all(),
+    ] : null;
+
+    // Datos con los que cada fila abre el modal
+    $datosNota = function ($cita, string $accion) {
+        return [
+            'citaId' => $cita->id,
+            'paciente' => trim($cita->paciente->name . ' ' . $cita->paciente->apellidos),
+            'fecha' => \Carbon\Carbon::parse($cita->fecha)->format('d/m/Y'),
+            'servicio' => $cita->servicio->nombre,
+            'accion' => $accion,
+            'campos' => [
+                'procedimiento' => $cita->notaEvolucion->procedimiento ?? '',
+                'observaciones' => $cita->notaEvolucion->observaciones ?? '',
+                'indicaciones' => $cita->notaEvolucion->indicaciones ?? '',
+                'proxima_cita_sugerida' => $cita->notaEvolucion->proxima_cita_sugerida ?? '',
+            ],
+            'errores' => [],
+        ];
+    };
+@endphp
+
+    <div x-data="reagendarApp({{ Illuminate\Support\Js::from($notaInicial) }})">
 
     {{-- Header --}}
     <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-8">
@@ -109,18 +148,27 @@
                                                 class="px-3 py-1.5 bg-purple-50 text-purple-600 text-xs font-medium rounded-lg hover:bg-purple-100 transition-all duration-200">
                                             Reagendar
                                         </button>
-                                        <form method="POST" action="{{ route('admin.citas.atender', $cita->id) }}">
-                                            @csrf
-                                            @method('PATCH')
-                                            <button type="submit" class="px-3 py-1.5 bg-green-50 text-green-600 text-xs font-medium rounded-lg hover:bg-green-100 transition-all duration-200">Atender</button>
-                                        </form>
+                                        <button @click="abrirNota({{ Illuminate\Support\Js::from($datosNota($cita, 'atender')) }})"
+                                                class="px-3 py-1.5 bg-green-50 text-green-600 text-xs font-medium rounded-lg hover:bg-green-100 transition-all duration-200">
+                                            Atender
+                                        </button>
                                         <form method="POST" action="{{ route('admin.citas.cancelar', $cita->id) }}" onsubmit="return confirm('¿Cancelar esta cita?');">
                                             @csrf
                                             @method('PATCH')
                                             <button type="submit" class="px-3 py-1.5 bg-red-50 text-red-600 text-xs font-medium rounded-lg hover:bg-red-100 transition-all duration-200">Cancelar</button>
                                         </form>
                                     @endif
-                                    @if(in_array($cita->status, ['atendida', 'cancelada']))
+                                    @if($cita->status === 'atendida')
+                                        @if($cita->notaEvolucion)
+                                            <span class="bg-green-50 text-green-600 text-xs font-medium px-3 py-1 rounded-full whitespace-nowrap">Con nota</span>
+                                        @else
+                                            <span class="bg-gray-50 text-gray-400 text-xs font-medium px-3 py-1 rounded-full whitespace-nowrap">Sin nota</span>
+                                        @endif
+                                        <button @click="abrirNota({{ Illuminate\Support\Js::from($datosNota($cita, 'editar')) }})"
+                                                class="px-3 py-1.5 bg-[#fde7ed] text-[#d75078] text-xs font-medium rounded-lg hover:bg-[#fbd3df] transition-all duration-200 whitespace-nowrap">
+                                            {{ $cita->notaEvolucion ? 'Ver nota' : 'Agregar nota' }}
+                                        </button>
+                                    @elseif($cita->status === 'cancelada')
                                         <span class="text-gray-300 text-xs">Sin acciones</span>
                                     @endif
                                 </div>
@@ -172,11 +220,10 @@
                                     class="flex-1 min-w-[90px] px-3 py-2 bg-purple-50 text-purple-600 text-xs font-medium rounded-lg">
                                 Reagendar
                             </button>
-                            <form method="POST" action="{{ route('admin.citas.atender', $cita->id) }}" class="flex-1 min-w-[90px]">
-                                @csrf
-                                @method('PATCH')
-                                <button type="submit" class="w-full px-3 py-2 bg-green-50 text-green-600 text-xs font-medium rounded-lg">Atender</button>
-                            </form>
+                            <button @click="abrirNota({{ Illuminate\Support\Js::from($datosNota($cita, 'atender')) }})"
+                                    class="flex-1 min-w-[90px] px-3 py-2 bg-green-50 text-green-600 text-xs font-medium rounded-lg">
+                                Atender
+                            </button>
                             <form method="POST" action="{{ route('admin.citas.cancelar', $cita->id) }}" onsubmit="return confirm('¿Cancelar esta cita?');" class="flex-1 min-w-[90px]">
                                 @csrf
                                 @method('PATCH')
@@ -184,11 +231,28 @@
                             </form>
                         </div>
                     @endif
+
+                    @if($cita->status === 'atendida')
+                        <div class="flex items-center gap-2 pt-2 border-t border-gray-50">
+                            @if($cita->notaEvolucion)
+                                <span class="bg-green-50 text-green-600 text-xs font-medium px-3 py-1 rounded-full whitespace-nowrap">Con nota</span>
+                            @else
+                                <span class="bg-gray-50 text-gray-400 text-xs font-medium px-3 py-1 rounded-full whitespace-nowrap">Sin nota</span>
+                            @endif
+                            <button @click="abrirNota({{ Illuminate\Support\Js::from($datosNota($cita, 'editar')) }})"
+                                    class="flex-1 px-3 py-2 bg-[#fde7ed] text-[#d75078] text-xs font-medium rounded-lg">
+                                {{ $cita->notaEvolucion ? 'Ver nota' : 'Agregar nota' }}
+                            </button>
+                        </div>
+                    @endif
                 </div>
                 @endforeach
             </div>
         @endif
     </div>
+
+    {{-- Modal de nota de evolución --}}
+    @include('admin.citas.partials.modal-nota')
 
     {{-- Modal de reagendar --}}
     <div x-show="modalAbierto" x-cloak
@@ -258,8 +322,12 @@
     </div>
 
     <script>
-        function reagendarApp() {
+        function reagendarApp(notaInicial) {
             return {
+                // Nota de evolución: null cuando el modal está cerrado
+                nota: notaInicial,
+                abrirNota(datos) { this.nota = datos; },
+
                 modalAbierto: false,
                 citaId: null,
                 servicioId: null,

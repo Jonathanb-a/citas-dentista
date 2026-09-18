@@ -37,6 +37,10 @@
                     </svg>
                     Editar
                 </button>
+                <a href="{{ route('admin.pacientes.imprimir', $paciente->id) }}" target="_blank" rel="noopener"
+                   class="flex-1 sm:flex-none text-center border border-gray-200 text-gray-600 text-sm font-medium px-5 py-3 rounded-xl hover:bg-[#FFF6F6] hover:text-[#d75078] transition-all duration-300 whitespace-nowrap">
+                    Imprimir expediente
+                </a>
                 <form method="POST" action="{{ route('admin.pacientes.restablecer-password', $paciente->id) }}" class="flex-1 sm:flex-none"
                       onsubmit="return confirm('¿Generar una contraseña nueva para este paciente? La actual dejará de funcionar.');">
                     @csrf

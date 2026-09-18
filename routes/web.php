@@ -84,11 +84,13 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->grou
     Route::post('/citas', [AdminCitaController::class, 'store'])->name('citas.store');
     Route::patch('/citas/{id}/confirmar', [AdminCitaController::class, 'confirmar'])->name('citas.confirmar');
     Route::patch('/citas/{id}/atender', [AdminCitaController::class, 'atender'])->name('citas.atender');
+    Route::put('/citas/{id}/nota', [AdminCitaController::class, 'guardarNota'])->name('citas.nota');
     Route::patch('/citas/{id}/cancelar', [AdminCitaController::class, 'cancelar'])->name('citas.cancelar');
 
     // Pacientes
     Route::get('/pacientes', [PacienteController::class, 'index'])->name('pacientes.index');
     Route::get('/pacientes/{id}', [PacienteController::class, 'show'])->name('pacientes.show');
+    Route::get('/pacientes/{id}/imprimir', [PacienteController::class, 'imprimir'])->name('pacientes.imprimir');
     Route::put('/pacientes/{id}', [PacienteController::class, 'update'])->name('pacientes.update');
     Route::put('/pacientes/{id}/expediente', [PacienteController::class, 'actualizarExpediente'])->name('pacientes.expediente.update');
     Route::put('/pacientes/{id}/odontograma', [PacienteController::class, 'actualizarOdontograma'])->name('pacientes.odontograma.update');

@@ -24,7 +24,7 @@ class CitaController extends Controller
     // Listar todas las citas
     public function index(Request $request)
     {
-        $query = Cita::with(['paciente', 'servicio.especialidad']);
+        $query = Cita::with(['paciente', 'servicio.especialidad', 'notaEvolucion.creadoPor']);
 
         if ($request->filled('status')) {
             $query->where('status', $request->status);

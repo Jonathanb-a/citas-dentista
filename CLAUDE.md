@@ -28,6 +28,18 @@ Entorno local: Laragon. Despliegue: Railway.
     interruptor que alterne entre una y otra
   - La clínica sí atiende niños (servicio "Ortodoncia maxilar")
 
+## Pendiente antes de entregar: datos del consultorio
+La impresión del expediente lee config/consultorio.php, que toma sus valores
+del .env. Hoy son provisionales. Hay que confirmarlos con la doctora y
+ponerlos en el .env local y en las variables de Railway:
+
+    CONSULTORIO_NOMBRE      (hoy: Melissa López N.)
+    CONSULTORIO_SUBTITULO   (hoy: Cirujano Dentista)
+    CONSULTORIO_CEDULA      (vacío: no se imprime)
+    CONSULTORIO_DIRECCION   (hoy: Lázaro Cárdenas, Michoacán — falta calle y número)
+    CONSULTORIO_TELEFONO    (vacío: no se imprime)
+    CONSULTORIO_CORREO      (vacío: no se imprime)
+
 ## Convenciones
 - Todo en español (variables, mensajes, comentarios)
 - Colores: rosa #d75078, rosa claro #fde7ed, fondo #FFF6F6, verde #15626C

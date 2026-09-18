@@ -32,16 +32,20 @@ class Odontograma extends Model
      * Esta es la única fuente de verdad: de aquí salen la validación,
      * la leyenda, el resumen y el modal de la vista.
      */
+    /**
+     * 'letra' y 'trama' son para la impresión: muchos consultorios imprimen en
+     * blanco y negro, así que el estado no puede depender solo del color.
+     */
     public const ESTADOS = [
-        'sano' => ['etiqueta' => 'Sano', 'relleno' => '#ffffff', 'borde' => '#d1d5db', 'textoClaro' => false],
-        'caries' => ['etiqueta' => 'Caries', 'relleno' => '#dc2626', 'borde' => '#b91c1c', 'textoClaro' => true],
-        'obturado' => ['etiqueta' => 'Obturado', 'relleno' => '#2563eb', 'borde' => '#1d4ed8', 'textoClaro' => true],
-        'corona' => ['etiqueta' => 'Corona', 'relleno' => '#f59e0b', 'borde' => '#d97706', 'textoClaro' => false],
-        'ausente' => ['etiqueta' => 'Ausente / extraído', 'relleno' => '#4b5563', 'borde' => '#374151', 'textoClaro' => true],
-        'endodoncia' => ['etiqueta' => 'Endodoncia', 'relleno' => '#7c3aed', 'borde' => '#6d28d9', 'textoClaro' => true],
-        'implante' => ['etiqueta' => 'Implante', 'relleno' => '#15626C', 'borde' => '#0f4a52', 'textoClaro' => true],
-        'fracturado' => ['etiqueta' => 'Fracturado', 'relleno' => '#ea580c', 'borde' => '#c2410c', 'textoClaro' => true],
-        'en_tratamiento' => ['etiqueta' => 'En tratamiento', 'relleno' => '#d75078', 'borde' => '#be3f64', 'textoClaro' => true],
+        'sano' => ['etiqueta' => 'Sano', 'relleno' => '#ffffff', 'borde' => '#d1d5db', 'textoClaro' => false, 'letra' => '', 'trama' => null],
+        'caries' => ['etiqueta' => 'Caries', 'relleno' => '#dc2626', 'borde' => '#b91c1c', 'textoClaro' => true, 'letra' => 'C', 'trama' => 'diagonal'],
+        'obturado' => ['etiqueta' => 'Obturado', 'relleno' => '#2563eb', 'borde' => '#1d4ed8', 'textoClaro' => true, 'letra' => 'O', 'trama' => 'puntos'],
+        'corona' => ['etiqueta' => 'Corona', 'relleno' => '#f59e0b', 'borde' => '#d97706', 'textoClaro' => false, 'letra' => 'K', 'trama' => 'cuadricula'],
+        'ausente' => ['etiqueta' => 'Ausente / extraído', 'relleno' => '#4b5563', 'borde' => '#374151', 'textoClaro' => true, 'letra' => 'A', 'trama' => 'solido'],
+        'endodoncia' => ['etiqueta' => 'Endodoncia', 'relleno' => '#7c3aed', 'borde' => '#6d28d9', 'textoClaro' => true, 'letra' => 'E', 'trama' => 'vertical'],
+        'implante' => ['etiqueta' => 'Implante', 'relleno' => '#15626C', 'borde' => '#0f4a52', 'textoClaro' => true, 'letra' => 'I', 'trama' => 'horizontal'],
+        'fracturado' => ['etiqueta' => 'Fracturado', 'relleno' => '#ea580c', 'borde' => '#c2410c', 'textoClaro' => true, 'letra' => 'F', 'trama' => 'contradiagonal'],
+        'en_tratamiento' => ['etiqueta' => 'En tratamiento', 'relleno' => '#d75078', 'borde' => '#be3f64', 'textoClaro' => true, 'letra' => 'T', 'trama' => 'puntos-grandes'],
     ];
 
     // Cuadrantes de la dentadura permanente, en el orden en que se dibujan

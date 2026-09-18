@@ -56,6 +56,11 @@ class PacienteController extends Controller
                 'expediente.actualizadoPor',
                 'expediente.odontograma.actualizadoPor',
                 'passwordRestablecidaPor',
+                'notasEvolucion' => function ($q) {
+                    $q->orderBy('created_at', 'desc');
+                },
+                'notasEvolucion.cita.servicio.especialidad',
+                'notasEvolucion.creadoPor',
                 'citas' => function ($q) {
                     $q->orderBy('fecha', 'desc')->orderBy('hora', 'desc');
                 },
@@ -74,6 +79,27 @@ class PacienteController extends Controller
         ];
 
         return view('admin.pacientes.show', compact('paciente', 'resumen'));
+    }
+
+    // Expediente completo en una vista pensada para papel
+    public function imprimir($id)
+    {
+        $paciente = $this->pacientes()
+            ->with([
+                'expediente.odontograma',
+                'citas' => function ($q) {
+                    $q->orderBy('fecha', 'desc')->orderBy('hora', 'desc');
+                },
+                'citas.servicio',
+                'notasEvolucion' => function ($q) {
+                    $q->orderBy('created_at', 'desc');
+                },
+                'notasEvolucion.cita.servicio',
+                'notasEvolucion.creadoPor',
+            ])
+            ->findOrFail($id);
+
+        return view('admin.pacientes.imprimir', compact('paciente'));
     }
 
     // Editar datos de contacto del paciente

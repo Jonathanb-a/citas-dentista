@@ -50,6 +50,12 @@ class User extends Authenticatable implements MustVerifyEmail
     }
 
     // Helpers de roles
+    // Notas de evolución del paciente, de la más reciente a la más antigua
+    public function notasEvolucion()
+    {
+        return $this->hasMany(NotaEvolucion::class, 'paciente_id');
+    }
+
     // Quién restableció por última vez la contraseña de esta cuenta
     public function passwordRestablecidaPor()
     {

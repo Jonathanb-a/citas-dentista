@@ -6,6 +6,7 @@ use App\Services\DisponibilidadService;
 use App\Http\Controllers\Controller;
 use App\Models\Cita;
 use App\Models\HistorialCita;
+use App\Models\NotaEvolucion;
 use App\Models\User;
 use App\Models\Especialidad;
 use App\Services\CitaManualService;
@@ -24,7 +25,7 @@ class CitaController extends Controller
     // Listar todas las citas
     public function index(Request $request)
     {
-        $query = Cita::with(['paciente', 'servicio.especialidad']);
+        $query = Cita::with(['paciente', 'servicio.especialidad', 'notaEvolucion']);
 
         if ($request->filled('status')) {
             $query->where('status', $request->status);
@@ -165,13 +166,16 @@ class CitaController extends Controller
     }
 
     // Marcar como atendida
-    public function atender($id)
+    public function atender(Request $request, $id)
     {
         $cita = Cita::findOrFail($id);
 
         if (!in_array($cita->status, ['confirmada', 'pendiente'])) {
             return back()->with('error', 'Esta cita no se puede marcar como atendida.');
         }
+
+        // La nota de evolución es opcional: la doctora puede saltarla si va con prisa
+        $datos = $request->validateWithBag('nota_' . $cita->id, NotaEvolucion::reglas(), NotaEvolucion::mensajes());
 
         $cita->update(['status' => 'atendida']);
 
@@ -182,7 +186,35 @@ class CitaController extends Controller
             'descripcion' => 'La cita fue marcada como atendida.',
         ]);
 
-        return back()->with('success', 'Cita marcada como atendida.');
+        $nota = NotaEvolucion::guardarDeCita($cita, $datos, auth()->id());
+
+        return back()->with('success', $nota
+            ? 'Cita atendida y nota de evolución guardada.'
+            : 'Cita marcada como atendida.');
+    }
+
+    // Agregar o editar la nota de evolución después (por si se saltó en el momento)
+    public function guardarNota(Request $request, $id)
+    {
+        $cita = Cita::findOrFail($id);
+
+        // Una nota describe una consulta que ya ocurrió
+        if ($cita->status !== 'atendida') {
+            return back()->with('error', 'Solo se puede registrar la evolución de una cita atendida.');
+        }
+
+        $datos = $request->validateWithBag('nota_' . $cita->id, NotaEvolucion::reglas(), NotaEvolucion::mensajes());
+
+        // Vaciar todos los campos borra la nota
+        if (!NotaEvolucion::tieneContenido($datos)) {
+            $cita->notaEvolucion()->delete();
+
+            return back()->with('success', 'Nota de evolución eliminada.');
+        }
+
+        NotaEvolucion::guardarDeCita($cita, $datos, auth()->id());
+
+        return back()->with('success', 'Nota de evolución guardada.');
     }
 
     // Cancelar cita

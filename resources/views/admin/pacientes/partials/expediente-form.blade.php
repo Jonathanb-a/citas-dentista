@@ -24,6 +24,11 @@
             'titulo' => 'Odontograma',
             'campos' => [],
         ],
+        // La evolución se edita desde su propio modal, por cita
+        'evolucion' => [
+            'titulo' => 'Evolución',
+            'campos' => [],
+        ],
     ];
 
     // Si hubo errores, abrir la pestaña que contiene el primero
@@ -36,9 +41,13 @@
         }
     }
 
-    // Un error del odontograma abre su pestaña
+    // Un error del odontograma o de una nota de evolución abre su pestaña
     if ($errors->odontograma->any()) {
         $pestanaInicial = 'odontograma';
+    }
+
+    if (collect($errors->getBags())->keys()->contains(fn ($bag) => str_starts_with($bag, 'nota_'))) {
+        $pestanaInicial = 'evolucion';
     }
 
     $claseInput = 'w-full px-4 py-3 rounded-xl border text-sm text-gray-700 focus:outline-none focus:border-[#d75078] focus:ring-2 focus:ring-[#fde7ed] transition-all duration-300';
@@ -89,7 +98,7 @@
 
     {{-- Historia clínica: un solo formulario para sus cuatro pestañas --}}
     <form method="POST" action="{{ route('admin.pacientes.expediente.update', $paciente->id) }}"
-          x-show="pestana !== 'odontograma'" x-cloak>
+          x-show="!['odontograma', 'evolucion'].includes(pestana)" x-cloak>
         @csrf
         @method('PUT')
 
@@ -207,5 +216,10 @@
     {{-- Odontograma: formulario propio, hermano del anterior --}}
     <div x-show="pestana === 'odontograma'" x-cloak>
         @include('admin.pacientes.partials.odontograma')
+    </div>
+
+    {{-- Evolución: línea de tiempo de las consultas --}}
+    <div x-show="pestana === 'evolucion'" x-cloak>
+        @include('admin.pacientes.partials.evolucion')
     </div>
 </div>

@@ -1,5 +1,27 @@
 <x-asistente.layout title="Citas">
 
+@php
+    // Datos con los que se abre la nota en solo lectura
+    $datosNotaLectura = function ($cita) {
+        $nota = $cita->notaEvolucion;
+        $autor = $nota?->creadoPor;
+
+        return [
+            'paciente' => trim($cita->paciente->name . ' ' . $cita->paciente->apellidos),
+            'fecha' => \Carbon\Carbon::parse($cita->fecha)->format('d/m/Y'),
+            'servicio' => $cita->servicio->nombre,
+            'autor' => $autor ? trim($autor->name . ' ' . $autor->apellidos) : 'un usuario eliminado',
+            'creada' => $nota?->created_at?->format('d/m/Y h:i A'),
+            'campos' => [
+                ['etiqueta' => 'PROCEDIMIENTO', 'valor' => $nota?->procedimiento],
+                ['etiqueta' => 'OBSERVACIONES', 'valor' => $nota?->observaciones],
+                ['etiqueta' => 'INDICACIONES', 'valor' => $nota?->indicaciones],
+                ['etiqueta' => 'PRÓXIMA CITA SUGERIDA', 'valor' => $nota?->proxima_cita_sugerida],
+            ],
+        ];
+    };
+@endphp
+
     <div x-data="reagendarApp()">
 
     {{-- Header --}}
@@ -104,6 +126,12 @@
                                         @method('PATCH')
                                         <button type="submit" class="px-3 py-1.5 border border-gray-200 text-gray-600 text-xs font-medium rounded-lg hover:bg-[#FFF6F6] hover:text-[#d75078] transition-all duration-200 whitespace-nowrap">Contraseña</button>
                                     </form>
+                                    @if($cita->notaEvolucion)
+                                        <button @click="verNota({{ Illuminate\Support\Js::from($datosNotaLectura($cita)) }})"
+                                                class="px-3 py-1.5 bg-[#fde7ed] text-[#d75078] text-xs font-medium rounded-lg hover:bg-[#fbd3df] transition-all duration-200 whitespace-nowrap">
+                                            Ver nota
+                                        </button>
+                                    @endif
                                     @if($cita->status === 'pendiente')
                                         <form method="POST" action="{{ route('asistente.citas.confirmar', $cita->id) }}">
                                             @csrf
@@ -171,6 +199,12 @@
                             @method('PATCH')
                             <button type="submit" class="w-full px-3 py-2 border border-gray-200 text-gray-600 text-xs font-medium rounded-lg">Contraseña</button>
                         </form>
+                        @if($cita->notaEvolucion)
+                            <button @click="verNota({{ Illuminate\Support\Js::from($datosNotaLectura($cita)) }})"
+                                    class="flex-1 min-w-[90px] px-3 py-2 bg-[#fde7ed] text-[#d75078] text-xs font-medium rounded-lg">
+                                Ver nota
+                            </button>
+                        @endif
                     </div>
 
                     @if(!in_array($cita->status, ['atendida', 'cancelada']))
@@ -203,6 +237,9 @@
             </div>
         @endif
     </div>
+
+    {{-- Nota de evolución en solo lectura --}}
+    @include('asistente.citas.partials.modal-nota-lectura')
 
     {{-- Modal de reagendar --}}
     <div x-show="modalAbierto" x-cloak
@@ -274,6 +311,10 @@
     <script>
         function reagendarApp() {
             return {
+                // Nota de evolución en solo lectura
+                notaVista: null,
+                verNota(datos) { this.notaVista = datos; },
+
                 modalAbierto: false,
                 citaId: null,
                 servicioId: null,

@@ -43,6 +43,12 @@ class Cita extends Model
         return $this->belongsTo(Horario::class);
     }
 
+    // Nota de evolución de la consulta (una por cita, puede no existir)
+    public function notaEvolucion()
+    {
+        return $this->hasOne(NotaEvolucion::class);
+    }
+
     public function historial()
     {
         return $this->hasMany(HistorialCita::class);
