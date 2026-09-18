@@ -15,6 +15,7 @@ use App\Http\Controllers\Asistente\CitaController as AsistenteCitaController;
 use App\Http\Controllers\Asistente\PacienteController as AsistentePacienteController;
 use App\Http\Controllers\Paciente\CitaController;
 use App\Http\Controllers\Paciente\DashboardController as PacienteDashboardController;
+use App\Http\Controllers\Paciente\PerfilController;
 
 // Página principal
 Route::get('/', function () {
@@ -124,6 +125,11 @@ Route::middleware(['auth', 'role:asistente'])->prefix('asistente')->name('asiste
 // Rutas Paciente — solo paciente
 Route::middleware(['auth', 'role:paciente'])->prefix('paciente')->name('paciente.')->group(function () {
     Route::get('/dashboard', [PacienteDashboardController::class, 'index'])->name('dashboard');
+
+    // Mi perfil: datos, contraseña y expediente en solo lectura
+    Route::get('/perfil', [PerfilController::class, 'index'])->name('perfil.index');
+    Route::put('/perfil', [PerfilController::class, 'actualizarDatos'])->name('perfil.datos');
+    Route::put('/perfil/password', [PerfilController::class, 'cambiarPassword'])->name('perfil.password');
 
     // Citas
     Route::get('/citas', [CitaController::class, 'index'])->name('citas.index');

@@ -34,7 +34,7 @@ class PasswordTemporalService
         $usuario->setRememberToken(Str::random(60));
         $usuario->save();
 
-        $this->cerrarSesiones($usuario);
+        $this->cerrarOtrasSesiones($usuario);
 
         return $this->panel($usuario, $password);
     }
@@ -49,13 +49,24 @@ class PasswordTemporalService
         ];
     }
 
-    // Cierra las sesiones abiertas del usuario (las sesiones se guardan en base de datos)
-    private function cerrarSesiones(User $usuario): void
+    /**
+     * Cierra las sesiones abiertas del usuario (se guardan en base de datos).
+     * $sesionActual se conserva: sirve cuando la persona cambia su propia
+     * contraseña y no debe expulsarse a sí misma.
+     */
+    public function cerrarOtrasSesiones(User $usuario, ?string $sesionActual = null): void
     {
-        if (config('session.driver') === 'database') {
-            DB::table(config('session.table', 'sessions'))
-                ->where('user_id', $usuario->id)
-                ->delete();
+        if (config('session.driver') !== 'database') {
+            return;
         }
+
+        $consulta = DB::table(config('session.table', 'sessions'))
+            ->where('user_id', $usuario->id);
+
+        if ($sesionActual) {
+            $consulta->where('id', '!=', $sesionActual);
+        }
+
+        $consulta->delete();
     }
 }

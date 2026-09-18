@@ -34,6 +34,10 @@
                    class="text-sm font-medium transition-colors duration-300 {{ request()->routeIs('paciente.citas.create') ? 'text-[#d75078]' : 'text-gray-500 hover:text-[#d75078]' }}">
                     Agendar cita
                 </a>
+                <a href="{{ route('paciente.perfil.index') }}"
+                   class="text-sm font-medium transition-colors duration-300 {{ request()->routeIs('paciente.perfil.*') ? 'text-[#d75078]' : 'text-gray-500 hover:text-[#d75078]' }}">
+                    Mi perfil
+                </a>
             </div>
 
             {{-- Usuario + Logout --}}
@@ -62,6 +66,7 @@
             <a href="{{ route('paciente.dashboard') }}" class="text-sm font-medium text-gray-600">Inicio</a>
             <a href="{{ route('paciente.citas.index') }}" class="text-sm font-medium text-gray-600">Mis citas</a>
             <a href="{{ route('paciente.citas.create') }}" class="text-sm font-medium text-gray-600">Agendar cita</a>
+            <a href="{{ route('paciente.perfil.index') }}" class="text-sm font-medium text-gray-600">Mi perfil</a>
             <form method="POST" action="{{ route('logout') }}">
                 @csrf
                 <button type="submit" class="text-sm font-medium text-red-500">Cerrar sesión</button>

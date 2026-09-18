@@ -28,6 +28,15 @@ Entorno local: Laragon. Despliegue: Railway.
     interruptor que alterne entre una y otra
   - La clínica sí atiende niños (servicio "Ortodoncia maxilar")
 
+## Qué ve el paciente de su expediente
+En "Mi perfil" el paciente consulta su expediente en solo lectura, pero
+NO se le muestran `notas_doctora` ni `observaciones`: son el espacio de
+trabajo interno de la doctora y no se puede garantizar qué escriba ahí.
+Lo que el paciente necesita saber va en `diagnostico`, `plan_tratamiento`
+y las `indicaciones` de cada nota de evolución.
+Si algún día hace falta un texto dirigido al paciente, se crea un campo
+nuevo con ese nombre explícito en vez de destapar estos dos.
+
 ## Pendiente antes de entregar: datos del consultorio
 La impresión del expediente lee config/consultorio.php, que toma sus valores
 del .env. Hoy son provisionales. Hay que confirmarlos con la doctora y
