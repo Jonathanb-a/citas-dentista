@@ -54,8 +54,9 @@ class RegisterController extends Controller
         // Expediente clínico vacío creado automáticamente
         Expediente::create(['paciente_id' => $user->id]);
 
-        // Enviar correo de verificación (no bloquea el uso del sistema)
-        $user->sendEmailVerificationNotification();
+        // Correo de verificación: si falla, se registra en el log y el registro sigue.
+        // El aviso del dashboard le permite reenviarlo después.
+        $user->enviarVerificacion();
 
         Auth::login($user);
 

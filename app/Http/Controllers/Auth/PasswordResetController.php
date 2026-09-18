@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Auth;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Password;
 use Illuminate\Support\Str;
 
@@ -26,12 +27,20 @@ class PasswordResetController extends Controller
             'email.email' => 'Escribe un correo válido.',
         ]);
 
-        Password::sendResetLink($request->only('email'));
+        // Un fallo del servicio de correo no debe convertirse en un error 500
+        try {
+            Password::sendResetLink($request->only('email'));
+        } catch (\Throwable $error) {
+            Log::error('No se pudo enviar el enlace de recuperación de contraseña.', [
+                'error' => $error->getMessage(),
+            ]);
+        }
 
-        // Respuesta idéntica exista o no la cuenta:
-        // así nadie puede averiguar qué correos están registrados
+        // Respuesta idéntica exista o no la cuenta, y haya salido o no el correo:
+        // así nadie puede averiguar qué correos están registrados.
+        // La salida real si no llega es la clínica, que puede generar una contraseña temporal.
         return back()->with('success',
-            'Si ese correo está registrado, te enviamos un enlace para restablecer tu contraseña. Revisa tu bandeja y la carpeta de spam.'
+            'Si el correo está registrado, te enviamos un enlace. Si no te llega en unos minutos, comunícate con la clínica para que te generen una contraseña temporal.'
         );
     }
 

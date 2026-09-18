@@ -71,10 +71,12 @@ class PerfilController extends Controller
         $paciente->save();
 
         if ($cambioCorreo) {
-            $paciente->sendEmailVerificationNotification();
+            // Los datos ya quedaron guardados: un fallo de correo no los revierte
+            $mensaje = $paciente->enviarVerificacion()
+                ? 'Datos actualizados. Te enviamos un correo de verificación a tu nueva dirección.'
+                : 'Datos actualizados, pero no pudimos enviar el correo de verificación. Puedes reenviarlo desde el inicio.';
 
-            return redirect()->route('paciente.perfil.index')
-                ->with('success', 'Datos actualizados. Te enviamos un correo de verificación a tu nueva dirección.');
+            return redirect()->route('paciente.perfil.index')->with('success', $mensaje);
         }
 
         return redirect()->route('paciente.perfil.index')

@@ -48,7 +48,11 @@ Route::get('/email/verify/{id}/{hash}', function (\Illuminate\Foundation\Auth\Em
 })->middleware(['auth', 'signed'])->name('verification.verify');
 
 Route::post('/email/verification-notification', function (\Illuminate\Http\Request $request) {
-    $request->user()->sendEmailVerificationNotification();
+    // Si el servicio de correo falla, se avisa sin error 500
+    if (!$request->user()->enviarVerificacion()) {
+        return back()->with('error', 'No pudimos enviar el correo en este momento. Intenta más tarde.');
+    }
+
     return back()->with('success', 'Te reenviamos el correo de verificación. Revisa tu bandeja.');
 })->middleware(['auth', 'throttle:3,1'])->name('verification.send');
 

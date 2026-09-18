@@ -6,6 +6,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Illuminate\Contracts\Auth\MustVerifyEmail;
+use Illuminate\Support\Facades\Log;
 
 class User extends Authenticatable implements MustVerifyEmail
 {
@@ -50,6 +51,28 @@ class User extends Authenticatable implements MustVerifyEmail
     }
 
     // Helpers de roles
+    /**
+     * Envía el correo de verificación sin arriesgar la operación del usuario:
+     * si el correo falla, lo registra en el log y devuelve false en vez de
+     * lanzar la excepción. Un fallo de correo nunca debe tumbar un registro
+     * ni un cambio de datos.
+     */
+    public function enviarVerificacion(): bool
+    {
+        try {
+            $this->sendEmailVerificationNotification();
+
+            return true;
+        } catch (\Throwable $error) {
+            Log::error('No se pudo enviar el correo de verificación.', [
+                'usuario_id' => $this->id,
+                'error' => $error->getMessage(),
+            ]);
+
+            return false;
+        }
+    }
+
     // Notas de evolución del paciente, de la más reciente a la más antigua
     public function notasEvolucion()
     {

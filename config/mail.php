@@ -45,7 +45,10 @@ return [
             'port' => env('MAIL_PORT', 2525),
             'username' => env('MAIL_USERNAME'),
             'password' => env('MAIL_PASSWORD'),
-            'timeout' => null,
+            // Red de seguridad: sin límite, un SMTP bloqueado (como en Railway)
+            // cuelga la petición hasta el error fatal de 30 s, que ningún
+            // try/catch atrapa. Con 5 s falla rápido y con una excepción.
+            'timeout' => env('MAIL_TIMEOUT', 5),
             'local_domain' => env('MAIL_EHLO_DOMAIN', parse_url((string) env('APP_URL', 'http://localhost'), PHP_URL_HOST)),
         ],
 
@@ -61,6 +64,8 @@ return [
             // ],
         ],
 
+        // Envío por la API HTTPS de Resend (Railway bloquea el SMTP saliente).
+        // La clave se lee de RESEND_API_KEY (config/resend.php y config/services.php).
         'resend' => [
             'transport' => 'resend',
         ],

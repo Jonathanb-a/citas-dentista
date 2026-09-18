@@ -37,7 +37,24 @@ y las `indicaciones` de cada nota de evolución.
 Si algún día hace falta un texto dirigido al paciente, se crea un campo
 nuevo con ese nombre explícito en vez de destapar estos dos.
 
-## Pendiente antes de entregar: datos del consultorio
+## ⚠️ Pendiente antes de entregar
+
+### 1. Dominio verificado en Resend (decide si el correo sirve para pacientes)
+Hoy el correo sale por Resend SIN dominio propio. Eso significa:
+- El remitente solo puede ser `onboarding@resend.dev`
+- Resend **solo entrega al correo del dueño de la cuenta de Resend**
+- **Ningún paciente real recibe** la verificación de correo ni el enlace
+  de "Olvidé mi contraseña". Resend rechaza esos envíos.
+
+El sistema no se rompe por eso (ver "Correo" más abajo): el paciente se
+registra y entra igual, y si olvida su contraseña, el mensaje lo manda a
+la clínica, donde la doctora o la asistente usan "Restablecer contraseña".
+
+Para que el correo funcione con pacientes: verificar en Resend un dominio
+(o subdominio) de la clínica, agregar sus registros DNS, y cambiar
+`MAIL_FROM_ADDRESS` a una dirección de ese dominio (ej. citas@dominio.mx).
+
+### 2. Datos del consultorio
 La impresión del expediente lee config/consultorio.php, que toma sus valores
 del .env. Hoy son provisionales. Hay que confirmarlos con la doctora y
 ponerlos en el .env local y en las variables de Railway:
@@ -48,6 +65,27 @@ ponerlos en el .env local y en las variables de Railway:
     CONSULTORIO_DIRECCION   (hoy: Lázaro Cárdenas, Michoacán — falta calle y número)
     CONSULTORIO_TELEFONO    (vacío: no se imprime)
     CONSULTORIO_CORREO      (vacío: no se imprime)
+
+## Correo
+- Se envía con Resend (paquete resend/resend-laravel) por su API HTTPS,
+  porque Railway bloquea el SMTP saliente
+- Variables en Railway:
+
+      MAIL_MAILER=resend
+      RESEND_API_KEY=re_...            (del panel de Resend)
+      MAIL_FROM_ADDRESS=onboarding@resend.dev   (hasta tener dominio verificado)
+      MAIL_FROM_NAME=Dentissa
+
+- `RESEND_ROUTES` está apagado por defecto en config/resend.php: el paquete
+  expone POST /resend/webhook y el proyecto no usa webhooks
+- **Un fallo de correo nunca debe tumbar una operación del usuario.** Los
+  cuatro puntos de envío están protegidos: registro, reenviar verificación,
+  cambio de correo en Mi perfil y "Olvidé mi contraseña". Para la
+  verificación se usa `User::enviarVerificacion()`, que registra el error
+  en el log y devuelve false en vez de lanzar la excepción
+- El mailer SMTP tiene timeout de 5 s: el error "Maximum execution time
+  of 30 seconds exceeded" es un error fatal de PHP que ningún try/catch
+  atrapa, así que la protección real es no quedarse colgado
 
 ## Convenciones
 - Todo en español (variables, mensajes, comentarios)
