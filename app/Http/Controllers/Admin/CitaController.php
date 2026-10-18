@@ -9,6 +9,7 @@ use App\Models\HistorialCita;
 use App\Models\NotaEvolucion;
 use App\Models\User;
 use App\Models\Especialidad;
+use App\Services\BloqueoService;
 use App\Services\CitaManualService;
 use Illuminate\Http\Request;
 use Carbon\Carbon;
@@ -39,7 +40,9 @@ class CitaController extends Controller
             ->orderBy('hora', 'desc')
             ->get();
 
-        return view('admin.citas.index', compact('citas'));
+        $citasBloqueadas = app(BloqueoService::class)->idsDeCitasBloqueadas($citas);
+
+        return view('admin.citas.index', compact('citas', 'citasBloqueadas'));
     }
 
     // Mostrar formulario para crear cita manual

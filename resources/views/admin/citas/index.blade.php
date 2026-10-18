@@ -120,7 +120,7 @@
                                 <span class="text-gray-700 text-sm font-medium">{{ $cita->paciente->name }} {{ $cita->paciente->apellidos }}</span>
                                 <p class="text-gray-400 text-xs">{{ $cita->paciente->telefono }}</p>
                             </td>
-                            <td class="py-4 px-4 text-gray-500 text-sm">{{ $cita->servicio->nombre }}</td>
+                            <td class="py-4 px-4 text-gray-500 text-sm">{{ $cita->servicio->nombre }}<br>@include('partials.etiqueta-bloqueo')</td>
                             <td class="py-4 px-4">
                                 @if($cita->status === 'pendiente')
                                     <span class="bg-yellow-50 text-yellow-600 text-xs font-medium px-3 py-1 rounded-full">Pendiente</span>
@@ -206,6 +206,7 @@
                         <span>{{ \Carbon\Carbon::parse($cita->hora)->format('h:i A') }}</span>
                     </div>
                     <p class="text-gray-500 text-sm">{{ $cita->servicio->nombre }}</p>
+                    @include('partials.etiqueta-bloqueo')
 
                     @if(!in_array($cita->status, ['atendida', 'cancelada']))
                         <div class="flex flex-wrap gap-2 pt-2 border-t border-gray-50">

@@ -28,6 +28,17 @@ class CitaManualService
      */
     public function crear(array $datos, $creadoPor)
     {
+        // 0. Verificar disponibilidad (horarios, citas y bloqueos) antes de crear nada,
+        // para no dejar un paciente nuevo huérfano si el horario no sirve
+        $espacios = $this->disponibilidad->espaciosDisponibles(
+            $datos['fecha'],
+            $datos['servicio_id']
+        );
+
+        if (!collect($espacios)->contains('hora', $datos['hora'])) {
+            return ['error' => 'Ese horario ya no está disponible. Por favor elige otro.'];
+        }
+
         // 1. Determinar el paciente
         $panelPassword = null;
 
@@ -54,18 +65,6 @@ class CitaManualService
         } else {
             // Usar paciente existente
             $pacienteId = $datos['paciente_id'];
-        }
-
-        // 2. Verificar disponibilidad del horario
-        $espacios = $this->disponibilidad->espaciosDisponibles(
-            $datos['fecha'],
-            $datos['servicio_id']
-        );
-
-        $horaDisponible = collect($espacios)->contains('hora', $datos['hora']);
-
-        if (!$horaDisponible) {
-            return ['error' => 'Ese horario ya no está disponible. Por favor elige otro.'];
         }
 
         // 3. Calcular límite de confirmación si se crea como confirmada

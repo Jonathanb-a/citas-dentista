@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Models\Bloqueo;
 use App\Models\Horario;
 use App\Models\Cita;
 use App\Models\Servicio;
@@ -30,6 +31,13 @@ class DisponibilidadService
             'Sunday' => 'domingo',
         ];
         $diaSemana = $diasMap[$fechaCarbon->format('l')];
+
+        // Bloqueos de agenda (vacaciones, juntas, días cerrados) que tocan esta fecha
+        $bloqueos = Bloqueo::queCubre($fechaCarbon)->get();
+
+        if ($bloqueos->contains(fn ($bloqueo) => $bloqueo->esDiaCompleto())) {
+            return [];
+        }
 
         // Buscar los bloques de horario de ese día que estén disponibles
         $horarios = Horario::where('dia_semana', $diaSemana)
@@ -71,10 +79,13 @@ class DisponibilidadService
                     return $espacioInicio->lt($ocupada['fin']) && $espacioFin->gt($ocupada['inicio']);
                 });
 
+                // Verificar si cae dentro de un bloqueo por horas
+                $estaBloqueado = $bloqueos->contains(fn ($bloqueo) => $bloqueo->chocaCon($espacioInicio, $espacioFin));
+
                 // Verificar si es una hora pasada
                 $esPasado = $fechaCarbon->isToday() && $actual->lt(Carbon::now());
 
-                if (!$hayChoque && !$esPasado) {
+                if (!$hayChoque && !$estaBloqueado && !$esPasado) {
                     $espacios[] = [
                         'hora' => $actual->format('H:i'),
                         'hora_formato' => $actual->format('h:i A'),

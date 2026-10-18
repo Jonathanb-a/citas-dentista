@@ -67,6 +67,15 @@
     </svg>
     Horarios
 </a>
+            {{-- Bloqueos --}}
+            <a href="{{ route('admin.bloqueos.index') }}"
+               class="flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-all duration-300 {{ request()->routeIs('admin.bloqueos.*') ? 'bg-[#fde7ed] text-[#d75078]' : 'text-gray-500 hover:bg-[#fde7ed] hover:text-[#d75078]' }}">
+                <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636"/>
+                </svg>
+                Bloqueos
+            </a>
+
             {{-- Especialidades --}}
             <a href="{{ route('admin.especialidades.index') }}"
                class="flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-all duration-300 {{ request()->routeIs('admin.especialidades.*') ? 'bg-[#fde7ed] text-[#d75078]' : 'text-gray-500 hover:bg-[#fde7ed] hover:text-[#d75078]' }}">

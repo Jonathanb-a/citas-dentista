@@ -7,6 +7,10 @@ Entorno local: Laragon. Despliegue: Railway.
 ## Arquitectura
 - MVC + capa de servicios (app/Services/)
 - DisponibilidadService: calcula espacios libres de cita
+  (respeta la tabla `bloqueos`: día completo, rango de días u horas de un
+  día; todo flujo de agenda pasa por aquí, no validar disponibilidad aparte)
+- BloqueoService: citas en conflicto con un bloqueo, guardado (conservar o
+  cancelar las citas) y marcado "En periodo bloqueado" en las listas de citas
 - CitaManualService: crear y reagendar citas (lo usan admin y asistente)
 - PasswordTemporalService: genera y asigna contraseñas temporales (alta de
   paciente en cita manual, restablecer contraseña y módulo Personal)

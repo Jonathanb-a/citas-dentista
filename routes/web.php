@@ -7,6 +7,7 @@ use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\Admin\EspecialidadController;
 use App\Http\Controllers\Admin\ServicioController;
 use App\Http\Controllers\Admin\HorarioController;
+use App\Http\Controllers\Admin\BloqueoController;
 use App\Http\Controllers\Admin\CitaController as AdminCitaController;
 use App\Http\Controllers\Admin\PacienteController;
 use App\Http\Controllers\Admin\PersonalController;
@@ -80,6 +81,11 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->grou
     Route::put('/horarios/{id}', [HorarioController::class, 'update'])->name('horarios.update');
     Route::patch('/horarios/{id}/toggle', [HorarioController::class, 'toggle'])->name('horarios.toggle');
     Route::delete('/horarios/{id}', [HorarioController::class, 'destroy'])->name('horarios.destroy');
+
+    // Bloqueos de agenda
+    Route::get('/bloqueos', [BloqueoController::class, 'index'])->name('bloqueos.index');
+    Route::post('/bloqueos', [BloqueoController::class, 'store'])->name('bloqueos.store');
+    Route::delete('/bloqueos/{id}', [BloqueoController::class, 'destroy'])->name('bloqueos.destroy');
 
     // Citas
     Route::get('/citas', [AdminCitaController::class, 'index'])->name('citas.index');
