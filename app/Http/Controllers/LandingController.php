@@ -3,13 +3,15 @@
 namespace App\Http\Controllers;
 
 use App\Models\Anuncio;
+use App\Services\LandingColeccionService;
+use App\Services\LandingContenidoService;
 use Illuminate\Support\Facades\Log;
 
 class LandingController extends Controller
 {
     const MAX_ANUNCIOS = 8;
 
-    public function index()
+    public function index(LandingContenidoService $landing, LandingColeccionService $colecciones)
     {
         $anuncios = collect();
 
@@ -21,6 +23,10 @@ class LandingController extends Controller
             Log::warning('Landing: no se pudieron cargar los anuncios: ' . $e->getMessage());
         }
 
-        return view('welcome', compact('anuncios'));
+        // $landing entrega cada imagen y texto: el personalizado o, si no hay, el original.
+        // $galeria son las fotos de la galería en su orden (los originales mientras no se toque)
+        $galeria = $colecciones->items('galeria');
+
+        return view('welcome', compact('anuncios', 'landing', 'galeria'));
     }
 }

@@ -115,6 +115,65 @@ ponerlos en el .env local y en las variables de Railway:
   con clases completas en `Anuncio::COLORES`
 - Si la consulta de anuncios falla, la landing se ve sin anuncios (no 500)
 
+## Contenido editable de la landing (imágenes y textos)
+- Pestañas de "Landing Page" en el admin: Anuncios · Imágenes y textos ·
+  Contacto (`Admin\LandingContenidoController`). La landing la sigue
+  sirviendo `LandingController`, que le pasa a la vista `$landing`
+  (`LandingContenidoService`)
+- **El catálogo vive en `config/landing.php`**: cada campo con su valor
+  ORIGINAL, etiqueta, tipo (texto, titulo, parrafo, imagen, telefono, red,
+  mapa), límites y tamaño ideal. La tabla `landing_contenidos` (clave y
+  valor) guarda SOLO lo que la doctora personalizó; sin fila se muestra el
+  original. Para hacer editable algo nuevo no hay migración: agregar el
+  campo al catálogo y leerlo en la vista con `$landing->texto('seccion.campo')`
+  o `->imagen('seccion.campo')`. Una prueba verifica que cada campo del
+  catálogo se lee de verdad en la landing
+- Un campo vacío o igual al original no guarda fila ("Restaurar" borra la
+  fila y la imagen subida; los archivos originales de `public/` no se
+  tocan). Las imágenes pasan por `ImagenService` (carpeta `landing`)
+- Los nombres de campo del formulario cambian el punto por `__`
+  (`hero__titulo`), porque Laravel lee los puntos como anidación
+- Teléfono: 10 dígitos (se aceptan espacios, guiones y lada 52); de ahí
+  salen `tel:+52…` y `wa.me/52…`. Redes: https y solo su dominio
+  (instagram.com, facebook.com…). Mapa: solo `https://www.google.com/maps/embed…`
+  (se acepta pegar el `<iframe>` completo y se extrae el `src`). Todo texto
+  plano, escapado
+- Si la lectura de lo personalizado falla, la landing se ve con los
+  originales (no 500). La prueba contra `tests/Fixtures/landing-sin-anuncios.html`
+  sigue siendo la garantía de que sin cambios la landing es idéntica, y
+  otra prueba confirma que personalizar y restaurar cada sección la deja
+  idéntica de nuevo
+- Esas comparaciones usan `assertTrue(a === b)` y no `assertSame`: si
+  fallaran, PHPUnit tarda minutos en calcular el diff de dos páginas enteras
+- **Faltan en el repositorio 12 de las 14 imágenes originales de la landing**
+  (`mision.png`, `vision.png`, `galeria-1..5.png`, `paciente-1..5.png`,
+  `certificado.png`; solo existen `image 1.png` y el logo): hoy se ven
+  rotas y el panel muestra "La imagen original no está disponible". Hay
+  que ponerlas en `public/img/` con esos nombres, o subirlas desde el panel
+- Los datos de contacto originales son de relleno (teléfono 999 123 1234,
+  Mérida, Yucatán, redes con `#`); la clínica está en Lázaro Cárdenas,
+  Michoacán. Se editan en la pestaña Contacto
+- **Galería (`#galeria`)**: pestaña "Galería" del panel
+  (`Admin\LandingGaleriaController`, `LandingColeccionService`, tabla
+  `landing_items`). Agregar, quitar, reordenar (▲▼), editar título y
+  subtítulo, cambiar la imagen y "Restaurar la galería original". Máximo 12
+  fotos y mínimo 1 (así el menú y el pie no apuntan a una sección vacía).
+  El título de la sección (`galeria.titulo`) es un campo normal del catálogo
+- Las listas se definen en `config/landing.php`, clave `colecciones`, con sus
+  elementos ORIGINALES. Mientras la lista no tenga filas se muestran los
+  originales (la landing es idéntica); el primer cambio guarda los 5
+  originales como filas (sin imagen propia, `original = galeria-N`) y
+  desde ahí manda la base de datos. Mientras no se ha tocado, un elemento se
+  identifica en las URLs del panel por la clave del original (`galeria-1`);
+  después, por su id. Un elemento que viene de un original puede volver a su
+  imagen original; uno agregado por la doctora no. Con 3 fotos o menos se
+  ven todas a la vez y la landing no muestra flechas ni puntos
+- En la landing las fotos van a Alpine como un arreglo JavaScript escrito en
+  el atributo `x-data`: los textos se escapan primero para JavaScript
+  (`$js` en `welcome.blade.php`) y luego para HTML. No cambiar ese orden
+- Testimonios (`#testimonios`): siguen fijos en la vista; se harán como
+  módulo aparte con reseñas de pacientes reales
+
 ## Imágenes subidas (ImagenService)
 - `App\Services\ImagenService` es el único camino para subir imágenes
   (anuncios hoy; landing editable, transformaciones u otros módulos

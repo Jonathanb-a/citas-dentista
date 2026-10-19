@@ -43,7 +43,11 @@ class LandingAnunciosTest extends TestCase
     {
         $original = file_get_contents(base_path('tests/Fixtures/landing-sin-anuncios.html'));
 
-        $this->assertSame($this->normalizar($original), $this->normalizar($html));
+        // assertTrue y no assertSame: si fallara, PHPUnit tardaría minutos en calcular el diff de dos páginas enteras
+        $this->assertTrue(
+            $this->normalizar($original) === $this->normalizar($html),
+            'La landing ya no es idéntica a la original (tests/Fixtures/landing-sin-anuncios.html).'
+        );
     }
 
     // El HTML del carrusel, para revisar solo esa parte

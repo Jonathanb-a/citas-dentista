@@ -9,6 +9,8 @@ use App\Http\Controllers\Admin\ServicioController;
 use App\Http\Controllers\Admin\HorarioController;
 use App\Http\Controllers\Admin\BloqueoController;
 use App\Http\Controllers\Admin\AnuncioController;
+use App\Http\Controllers\Admin\LandingContenidoController;
+use App\Http\Controllers\Admin\LandingGaleriaController;
 use App\Http\Controllers\LandingController;
 use App\Http\Controllers\Admin\CitaController as AdminCitaController;
 use App\Http\Controllers\Admin\PacienteController;
@@ -81,6 +83,24 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->grou
     Route::put('/horarios/{id}', [HorarioController::class, 'update'])->name('horarios.update');
     Route::patch('/horarios/{id}/toggle', [HorarioController::class, 'toggle'])->name('horarios.toggle');
     Route::delete('/horarios/{id}', [HorarioController::class, 'destroy'])->name('horarios.destroy');
+
+    // Landing page: imágenes y textos editables
+    Route::get('/landing/contenido', [LandingContenidoController::class, 'contenido'])->name('landing.contenido');
+    Route::get('/landing/contacto', [LandingContenidoController::class, 'contacto'])->name('landing.contacto');
+    Route::put('/landing/secciones/{seccion}', [LandingContenidoController::class, 'guardar'])->name('landing.guardar');
+    Route::delete('/landing/secciones/{seccion}', [LandingContenidoController::class, 'restaurarSeccion'])->name('landing.restaurar-seccion');
+    Route::delete('/landing/campos/{clave}', [LandingContenidoController::class, 'restaurarCampo'])
+        ->where('clave', '[a-z0-9_.]+')->name('landing.restaurar-campo');
+
+    // Landing page: galería (agregar, quitar y reordenar fotos)
+    Route::get('/landing/galeria', [LandingGaleriaController::class, 'index'])->name('landing.galeria');
+    Route::post('/landing/galeria', [LandingGaleriaController::class, 'agregar'])->name('landing.galeria.agregar');
+    Route::delete('/landing/galeria', [LandingGaleriaController::class, 'restaurar'])->name('landing.galeria.restaurar');
+    Route::put('/landing/galeria/{item}', [LandingGaleriaController::class, 'actualizar'])->where('item', '[a-z0-9-]+')->name('landing.galeria.actualizar');
+    Route::delete('/landing/galeria/{item}', [LandingGaleriaController::class, 'eliminar'])->where('item', '[a-z0-9-]+')->name('landing.galeria.eliminar');
+    Route::patch('/landing/galeria/{item}/subir', [LandingGaleriaController::class, 'subir'])->where('item', '[a-z0-9-]+')->name('landing.galeria.subir');
+    Route::patch('/landing/galeria/{item}/bajar', [LandingGaleriaController::class, 'bajar'])->where('item', '[a-z0-9-]+')->name('landing.galeria.bajar');
+    Route::delete('/landing/galeria/{item}/imagen', [LandingGaleriaController::class, 'restaurarImagen'])->where('item', '[a-z0-9-]+')->name('landing.galeria.restaurar-imagen');
 
     // Landing page: anuncios y promociones
     Route::get('/anuncios', [AnuncioController::class, 'index'])->name('anuncios.index');
