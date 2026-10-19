@@ -8,6 +8,8 @@ use App\Http\Controllers\Admin\EspecialidadController;
 use App\Http\Controllers\Admin\ServicioController;
 use App\Http\Controllers\Admin\HorarioController;
 use App\Http\Controllers\Admin\BloqueoController;
+use App\Http\Controllers\Admin\AnuncioController;
+use App\Http\Controllers\LandingController;
 use App\Http\Controllers\Admin\CitaController as AdminCitaController;
 use App\Http\Controllers\Admin\PacienteController;
 use App\Http\Controllers\Admin\PersonalController;
@@ -19,9 +21,7 @@ use App\Http\Controllers\Paciente\DashboardController as PacienteDashboardContro
 use App\Http\Controllers\Paciente\PerfilController;
 
 // Página principal
-Route::get('/', function () {
-    return view('welcome');
-});
+Route::get('/', [LandingController::class, 'index'])->name('landing');
 
 // Autenticación
 Route::get('/login', [LoginController::class, 'show'])->name('login');
@@ -81,6 +81,15 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->grou
     Route::put('/horarios/{id}', [HorarioController::class, 'update'])->name('horarios.update');
     Route::patch('/horarios/{id}/toggle', [HorarioController::class, 'toggle'])->name('horarios.toggle');
     Route::delete('/horarios/{id}', [HorarioController::class, 'destroy'])->name('horarios.destroy');
+
+    // Landing page: anuncios y promociones
+    Route::get('/anuncios', [AnuncioController::class, 'index'])->name('anuncios.index');
+    Route::get('/anuncios/crear', [AnuncioController::class, 'create'])->name('anuncios.create');
+    Route::post('/anuncios', [AnuncioController::class, 'store'])->name('anuncios.store');
+    Route::get('/anuncios/{id}/editar', [AnuncioController::class, 'edit'])->name('anuncios.edit');
+    Route::put('/anuncios/{id}', [AnuncioController::class, 'update'])->name('anuncios.update');
+    Route::patch('/anuncios/{id}/toggle', [AnuncioController::class, 'toggle'])->name('anuncios.toggle');
+    Route::delete('/anuncios/{id}', [AnuncioController::class, 'destroy'])->name('anuncios.destroy');
 
     // Bloqueos de agenda
     Route::get('/bloqueos', [BloqueoController::class, 'index'])->name('bloqueos.index');

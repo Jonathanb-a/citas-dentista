@@ -13,4 +13,8 @@ return [
     'direccion' => env('CONSULTORIO_DIRECCION', 'Lázaro Cárdenas, Michoacán'),
     'telefono' => env('CONSULTORIO_TELEFONO', null),
     'correo' => env('CONSULTORIO_CORREO', null),
+
+    // Zona horaria con la que se decide qué es "hoy" para la vigencia de anuncios
+    // (la app corre en UTC: a las 6 pm de México ya sería "mañana")
+    'zona_horaria' => env('CONSULTORIO_ZONA_HORARIA', 'America/Mexico_City'),
 ];

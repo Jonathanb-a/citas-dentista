@@ -1,5 +1,9 @@
 <x-layout>
 
+    @if(!empty($avisos) && $avisos->isNotEmpty())
+        @include('partials.landing-avisos')
+    @endif
+
     {{-- HERO --}}
     <section id="inicio" class="w-full min-h-[600px] md:min-h-[719px] bg-[#fde7ed9c] flex items-center px-6 md:px-[108px] py-16 md:py-0">
 
@@ -48,6 +52,10 @@
     </div>
 </div>
 
+
+@if(!empty($promociones) && $promociones->isNotEmpty())
+    @include('partials.landing-promociones')
+@endif
 
 {{-- MISION Y VISION --}}
 <section id="nosotros" class="w-full bg-white py-16 md:py-24 px-6 md:px-[108px]">

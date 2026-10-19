@@ -91,6 +91,27 @@ ponerlos en el .env local y en las variables de Railway:
   of 30 seconds exceeded" es un error fatal de PHP que ningún try/catch
   atrapa, así que la protección real es no quedarse colgado
 
+## Anuncios y promociones de la landing
+- Los edita la doctora en el admin, entrada "Landing Page" del menú
+  (`Admin\AnuncioController`, modelo `Anuncio`). La landing la sirve
+  `LandingController`
+- **Regla de oro: sin anuncios vigentes la landing es idéntica a la
+  original.** `tests/Fixtures/landing-sin-anuncios.html` es el HTML de
+  referencia y una prueba lo compara. Si algún día cambias la landing a
+  propósito, regenera ese archivo; si la prueba falla sin que lo
+  hayas hecho, algo se coló en la landing
+- Avisos vigentes: franja arriba (`partials/landing-avisos`, máx. 3).
+  Promociones vigentes: sección `#promociones` tras la cinta rosa de
+  servicios (`partials/landing-promociones`, máx. 6). La cinta rosa es
+  texto fijo de la vista, no son anuncios
+- Vigente = activo y dentro de las fechas (extremos incluidos, ambas
+  opcionales). "Hoy" se calcula en `config('consultorio.zona_horaria')`
+  (America/Mexico_City), porque la app corre en UTC
+- Todo texto es plano y se escapa. Enlaces: solo https/http, ruta `/…`,
+  ancla `#…` o `tel:`. El color es de una paleta fija (rosa, verde, gris)
+  con clases completas en `Anuncio::COLORES`; no se suben imágenes
+- Si la consulta de anuncios falla, la landing se ve sin anuncios (no 500)
+
 ## Avisos por Telegram (solo a la clínica)
 - `TelegramService` avisa a la doctora y la asistente por la Bot API de
   Telegram (HTTPS). Nunca escribe a los pacientes
