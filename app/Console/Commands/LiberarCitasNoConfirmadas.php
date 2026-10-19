@@ -5,6 +5,7 @@ namespace App\Console\Commands;
 use Illuminate\Console\Command;
 use App\Models\Cita;
 use App\Models\HistorialCita;
+use App\Services\TelegramService;
 use Carbon\Carbon;
 
 class LiberarCitasNoConfirmadas extends Command
@@ -42,7 +43,8 @@ class LiberarCitasNoConfirmadas extends Command
                 'descripcion' => 'Cita liberada automáticamente: el paciente no confirmó su asistencia dentro del plazo de 24hrs.',
             ]);
 
-            // TODO: Webhook n8n — avisar a la doctora que se liberó esta cita
+            // Aviso a la clínica; en consola no hay respuesta que esperar, se envía directo
+            app(TelegramService::class)->citaLiberada($cita);
 
             $contador++;
         }

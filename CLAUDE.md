@@ -91,6 +91,34 @@ ponerlos en el .env local y en las variables de Railway:
   of 30 seconds exceeded" es un error fatal de PHP que ningún try/catch
   atrapa, así que la protección real es no quedarse colgado
 
+## Avisos por Telegram (solo a la clínica)
+- `TelegramService` avisa a la doctora y la asistente por la Bot API de
+  Telegram (HTTPS). Nunca escribe a los pacientes
+- Eventos: paciente agenda, paciente cancela, cita reagendada (admin o
+  asistente) y cita liberada por no confirmar. Mensaje corto: evento,
+  paciente, servicio, fecha y hora. Sin teléfono ni datos clínicos
+- Variables (.env local y Railway):
+
+      TELEGRAM_BOT_TOKEN=123456:ABC...   (de @BotFather)
+      TELEGRAM_CHAT_IDS=111111,222222    (separados por coma)
+
+  Sin token o sin chats no hace nada. Cada persona debe abrir el bot y
+  pulsar Iniciar, o Telegram rechaza el envío; el chat ID se obtiene
+  escribiéndole al bot y abriendo `https://api.telegram.org/bot<TOKEN>/getUpdates`
+  (un grupo con el bot tiene ID negativo)
+- Un fallo de Telegram nunca debe afectar una cita: timeout de 5 s, todo
+  en try/catch con log, y en peticiones web se envía después de responder
+  (`enSegundoPlano`). El token se oculta en los logs porque va en la URL
+- `phpunit.xml` deja las variables vacías para que las pruebas no manden
+  mensajes reales aunque el .env local tenga token
+- El aviso de "liberada" depende de que el scheduler corra en Railway
+  (`php artisan schedule:work` o un cron que ejecute `schedule:run`)
+
+## Pendiente técnico
+- `citas.horario_id` tiene `onDelete cascade`: eliminar un horario semanal
+  borra sus citas. Cambiarlo a restrict/null o impedir borrar horarios con
+  citas
+
 ## Convenciones
 - Todo en español (variables, mensajes, comentarios)
 - Colores: rosa #d75078, rosa claro #fde7ed, fondo #FFF6F6, verde #15626C

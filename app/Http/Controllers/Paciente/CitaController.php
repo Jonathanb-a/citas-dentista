@@ -8,6 +8,7 @@ use App\Models\Especialidad;
 use App\Models\Servicio;
 use App\Models\HistorialCita;
 use App\Services\DisponibilidadService;
+use App\Services\TelegramService;
 use Illuminate\Http\Request;
 use Carbon\Carbon;
 
@@ -128,7 +129,8 @@ class CitaController extends Controller
                 'descripcion' => 'El paciente agendó la cita.',
             ]);
 
-            // TODO: Aquí se disparará el webhook a n8n para notificación WhatsApp
+            // Aviso a la clínica, ya con la cita guardada y después de responder al paciente
+            app(TelegramService::class)->enSegundoPlano(fn ($telegram) => $telegram->citaAgendada($cita));
 
             return redirect()->route('paciente.citas.index')
                 ->with('success', 'Tu cita fue agendada correctamente. Recibirás una confirmación pronto.');
@@ -161,7 +163,7 @@ class CitaController extends Controller
             'descripcion' => 'El paciente canceló la cita.',
         ]);
 
-        // TODO: Webhook a n8n para notificar cancelación
+        app(TelegramService::class)->enSegundoPlano(fn ($telegram) => $telegram->citaCancelada($cita));
 
         return redirect()->route('paciente.citas.index')
             ->with('success', 'Tu cita fue cancelada correctamente.');

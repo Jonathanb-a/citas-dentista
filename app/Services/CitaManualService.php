@@ -8,6 +8,7 @@ use App\Models\Expediente;
 use App\Models\HistorialCita;
 use App\Services\DisponibilidadService;
 use App\Services\PasswordTemporalService;
+use App\Services\TelegramService;
 use Illuminate\Support\Facades\Hash;
 use Carbon\Carbon;
 
@@ -124,6 +125,9 @@ class CitaManualService
             return ['error' => 'Ese horario no está disponible. Por favor elige otro.'];
         }
 
+        // Fecha y hora anteriores, para el aviso a la clínica
+        $antes = $cita->fecha->toDateString() . ' ' . Carbon::parse($cita->hora)->format('H:i');
+
         // Actualizar la cita con la nueva fecha y hora
         try {
             $cita->update([
@@ -142,7 +146,8 @@ class CitaManualService
                 'descripcion' => 'Cita reagendada por ' . auth()->user()->name . ' a una nueva fecha y hora.',
             ]);
 
-            // TODO: Webhook n8n — notificar reagendamiento al paciente
+            // Aviso a la clínica, ya con la cita guardada y después de responder
+            app(TelegramService::class)->enSegundoPlano(fn ($telegram) => $telegram->citaReagendada($cita, $antes));
 
             return ['cita' => $cita];
 

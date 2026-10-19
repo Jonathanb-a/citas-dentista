@@ -22,6 +22,13 @@ return [
         'key' => env('RESEND_API_KEY'),
     ],
 
+    // Avisos a la clínica (doctora y asistente) por la Bot API de Telegram.
+    // Sin token no se envía nada. chat_ids: separados por coma.
+    'telegram' => [
+        'token' => env('TELEGRAM_BOT_TOKEN'),
+        'chat_ids' => env('TELEGRAM_CHAT_IDS'),
+    ],
+
     'ses' => [
         'key' => env('AWS_ACCESS_KEY_ID'),
         'secret' => env('AWS_SECRET_ACCESS_KEY'),
