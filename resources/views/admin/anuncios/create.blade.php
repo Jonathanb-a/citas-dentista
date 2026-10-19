@@ -5,7 +5,7 @@
         <h1 class="font-bold text-gray-800 text-2xl mt-2">Nuevo anuncio</h1>
     </div>
 
-    <form method="POST" action="{{ route('admin.anuncios.store') }}">
+    <form method="POST" action="{{ route('admin.anuncios.store') }}" enctype="multipart/form-data">
         @csrf
         @include('admin.anuncios.partials.form', ['anuncio' => null])
     </form>

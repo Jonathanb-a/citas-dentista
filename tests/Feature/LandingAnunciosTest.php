@@ -6,16 +6,20 @@ use App\Models\Anuncio;
 use Carbon\Carbon;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Schema;
+use Illuminate\Support\Facades\Storage;
 use Tests\TestCase;
 
 class LandingAnunciosTest extends TestCase
 {
     use RefreshDatabase;
 
+    private int $orden = 0;
+
     protected function setUp(): void
     {
         parent::setUp();
         $this->withoutVite();
+        Storage::fake('imagenes');
     }
 
     private function anuncio(array $cambios = []): Anuncio
@@ -25,10 +29,11 @@ class LandingAnunciosTest extends TestCase
             'tipo' => 'aviso',
             'activo' => true,
             'color' => 'rosa',
+            'orden' => ++$this->orden,
         ], $cambios));
     }
 
-    // El HTML de la landing antes de este módulo; solo se compara sin diferencias de espacios
+    // El HTML de la landing antes de los anuncios; solo se compara sin diferencias de espacios
     private function normalizar(string $html): string
     {
         return trim(preg_replace('/\s+/', ' ', $html));
@@ -41,6 +46,15 @@ class LandingAnunciosTest extends TestCase
         $this->assertSame($this->normalizar($original), $this->normalizar($html));
     }
 
+    // El HTML del carrusel, para revisar solo esa parte
+    private function carrusel(string $html): string
+    {
+        $inicio = strpos($html, 'data-carrusel');
+        $this->assertNotFalse($inicio, 'La landing no tiene carrusel.');
+
+        return substr($html, $inicio, strpos($html, 'id="nosotros"') - $inicio);
+    }
+
     // ---------- Sin anuncios la landing no cambia ----------
 
     public function test_sin_anuncios_la_landing_es_identica_a_la_original(): void
@@ -48,9 +62,9 @@ class LandingAnunciosTest extends TestCase
         $respuesta = $this->get('/')->assertOk();
 
         $this->assertIgualALaLandingOriginal($respuesta->getContent());
-        $respuesta->assertDontSee('data-avisos', false)
-            ->assertDontSee('data-promociones', false)
-            ->assertDontSee('PROMOCIONES');
+        $respuesta->assertDontSee('data-carrusel', false)
+            ->assertDontSee('NOVEDADES Y PROMOCIONES')
+            ->assertDontSee('carruselAnuncios', false);
     }
 
     public function test_anuncios_inactivos_vencidos_o_programados_tampoco_cambian_nada(): void
@@ -74,166 +88,219 @@ class LandingAnunciosTest extends TestCase
     {
         Schema::drop('anuncios');
 
-        $respuesta = $this->get('/')->assertOk();
-
-        $this->assertIgualALaLandingOriginal($respuesta->getContent());
+        $this->assertIgualALaLandingOriginal($this->get('/')->assertOk()->getContent());
     }
 
-    public function test_la_cinta_de_servicios_original_sigue_igual_con_anuncios(): void
+    public function test_con_anuncios_el_resto_de_la_landing_sigue_en_su_lugar(): void
     {
         $this->anuncio();
-        $this->anuncio(['tipo' => 'promocion', 'titulo' => 'Promo']);
 
         $this->get('/')->assertOk()
             ->assertSee('animate-marquee', false)
             ->assertSee('CONSULTA GRATIS', false)
             ->assertSee('id="inicio"', false)
             ->assertSee('id="nosotros"', false)
-            ->assertSee('id="contacto"', false);
+            ->assertSee('id="galeria"', false)
+            ->assertSee('id="contacto"', false)
+            ->assertDontSee('data-avisos', false); // ya no hay franja fija arriba
     }
 
-    // ---------- Avisos ----------
+    // ---------- Posición ----------
 
-    public function test_un_aviso_vigente_sale_en_la_franja_de_arriba_antes_del_hero(): void
+    public function test_el_carrusel_va_despues_de_la_cinta_rosa_y_antes_de_nosotros(): void
     {
-        $this->anuncio(['titulo' => 'Cerrado el lunes por capacitación', 'descripcion' => 'Reanudamos el martes', 'emoji' => '📢']);
+        $this->anuncio();
+
+        $html = $this->get('/')->assertOk()->getContent();
+
+        $this->assertGreaterThan(strpos($html, 'animate-marquee'), strpos($html, 'data-carrusel'));
+        $this->assertLessThan(strpos($html, 'id="nosotros"'), strpos($html, 'data-carrusel'));
+        $this->assertLessThan(strpos($html, 'data-carrusel'), strpos($html, 'id="inicio"'));
+    }
+
+    // ---------- Una slide o varias ----------
+
+    public function test_con_una_sola_slide_no_hay_controles_ni_avance_automatico(): void
+    {
+        $this->anuncio(['titulo' => 'Única novedad']);
 
         $respuesta = $this->get('/')->assertOk()
-            ->assertSee('data-avisos', false)
-            ->assertSee('Cerrado el lunes por capacitación')
-            ->assertSee('Reanudamos el martes')
-            ->assertSee('📢')
-            ->assertDontSee('data-promociones', false);
+            ->assertSee('NOVEDADES Y PROMOCIONES')
+            ->assertSee('Única novedad');
+        $carrusel = $this->carrusel($respuesta->getContent());
 
-        $html = $respuesta->getContent();
-        $this->assertLessThan(strpos($html, 'id="inicio"'), strpos($html, 'data-avisos'));
+        $this->assertStringNotContainsString('x-data', $carrusel);
+        $this->assertStringNotContainsString('carruselAnuncios', $carrusel);
+        $this->assertStringNotContainsString('aria-label="Anterior"', $carrusel);
+        $this->assertStringNotContainsString('aria-label="Siguiente"', $carrusel);
+        $this->assertStringNotContainsString('Ir a la slide', $carrusel);
+        $this->assertStringNotContainsString('opacity: 0', $carrusel);
     }
+
+    public function test_con_varias_slides_hay_flechas_puntos_y_gestos(): void
+    {
+        foreach (['Uno', 'Dos', 'Tres'] as $titulo) {
+            $this->anuncio(['titulo' => $titulo]);
+        }
+
+        $carrusel = $this->carrusel($this->get('/')->assertOk()->getContent());
+
+        $this->assertStringContainsString('x-data="carruselAnuncios(3)"', $carrusel);
+        $this->assertStringContainsString('aria-label="Anterior"', $carrusel);
+        $this->assertStringContainsString('aria-label="Siguiente"', $carrusel);
+        $this->assertSame(3, substr_count($carrusel, 'Ir a la slide'));
+        // pausa con mouse y foco, deslizar con el dedo
+        $this->assertStringContainsString('@mouseenter="pausado = true"', $carrusel);
+        $this->assertStringContainsString('@mouseleave="pausado = false"', $carrusel);
+        $this->assertStringContainsString('@touchstart.passive="empezarToque($event)"', $carrusel);
+        $this->assertStringContainsString('@touchend="terminarToque($event)"', $carrusel);
+    }
+
+    public function test_solo_la_primera_slide_se_ve_antes_de_que_cargue_alpine(): void
+    {
+        foreach (['Uno', 'Dos', 'Tres'] as $titulo) {
+            $this->anuncio(['titulo' => $titulo]);
+        }
+
+        $carrusel = $this->carrusel($this->get('/')->assertOk()->getContent());
+
+        $this->assertSame(2, substr_count($carrusel, 'style="opacity: 0; pointer-events: none;"'));
+    }
+
+    public function test_las_slides_siguen_el_orden_del_panel_no_el_de_creacion(): void
+    {
+        $this->anuncio(['titulo' => 'Creado primero', 'orden' => 3]);
+        $this->anuncio(['titulo' => 'Creado segundo', 'orden' => 1]);
+        $this->anuncio(['titulo' => 'Creado tercero', 'orden' => 2]);
+
+        $carrusel = $this->carrusel($this->get('/')->assertOk()->getContent());
+
+        $this->assertLessThan(strpos($carrusel, 'Creado tercero'), strpos($carrusel, 'Creado segundo'));
+        $this->assertLessThan(strpos($carrusel, 'Creado primero'), strpos($carrusel, 'Creado tercero'));
+    }
+
+    public function test_maximo_ocho_slides(): void
+    {
+        foreach (range(1, 11) as $n) {
+            $this->anuncio(['titulo' => "Novedad número $n"]);
+        }
+
+        $carrusel = $this->carrusel($this->get('/')->assertOk()->getContent());
+
+        $this->assertSame(8, substr_count($carrusel, 'Novedad número'));
+        $this->assertStringContainsString('carruselAnuncios(8)', $carrusel);
+        $this->assertStringContainsString('Novedad número 8', $carrusel);
+        $this->assertStringNotContainsString('Novedad número 9', $carrusel);
+    }
+
+    // ---------- Contenido de cada slide ----------
+
+    public function test_cada_slide_dice_si_es_aviso_o_promocion(): void
+    {
+        $this->anuncio(['titulo' => 'Cerrado el lunes', 'tipo' => 'aviso']);
+        $this->anuncio(['titulo' => 'Blanqueamiento 2x1', 'tipo' => 'promocion']);
+
+        $carrusel = $this->carrusel($this->get('/')->assertOk()->getContent());
+
+        $this->assertStringContainsString('AVISO', $carrusel);
+        $this->assertStringContainsString('PROMOCIÓN', $carrusel);
+    }
+
+    public function test_muestra_titulo_descripcion_emoji_y_vigencia(): void
+    {
+        $fin = Carbon::now('America/Mexico_City')->addDays(5);
+        $this->anuncio([
+            'tipo' => 'promocion', 'titulo' => 'Blanqueamiento 2x1', 'descripcion' => 'Trae a un acompañante',
+            'emoji' => '✨', 'fecha_fin' => $fin->toDateString(),
+        ]);
+
+        $this->get('/')->assertOk()
+            ->assertSee('Blanqueamiento 2x1')
+            ->assertSee('Trae a un acompañante')
+            ->assertSee('✨')
+            ->assertSee('Válido hasta el ' . $fin->format('d/m/Y'));
+    }
+
+    public function test_la_imagen_sale_con_su_url_y_el_titulo_como_texto_alternativo(): void
+    {
+        $this->anuncio(['titulo' => 'Con foto', 'imagen' => 'anuncios/01jabcdefghjkmnpqrstvwxyz0.webp']);
+        $this->anuncio(['titulo' => 'Sin foto']);
+
+        $carrusel = $this->carrusel($this->get('/')->assertOk()->getContent());
+
+        // Storage::fake cambia el prefijo de la URL; la ruta del archivo y el alt son lo que importa aquí
+        $this->assertMatchesRegularExpression(
+            '#<img src="/[^"]*anuncios/01jabcdefghjkmnpqrstvwxyz0\.webp" alt="Con foto"#',
+            $carrusel
+        );
+        $this->assertSame(1, substr_count($carrusel, '<img'));
+    }
+
+    public function test_una_ruta_de_imagen_invalida_en_la_base_no_genera_imagen(): void
+    {
+        $this->anuncio(['imagen' => '../../.env']);
+
+        $carrusel = $this->carrusel($this->get('/')->assertOk()->getContent());
+
+        $this->assertStringNotContainsString('<img', $carrusel);
+        $this->assertStringNotContainsString('.env', $carrusel);
+    }
+
+    public function test_sin_imagen_la_slide_usa_el_emoji_en_un_circulo(): void
+    {
+        $this->anuncio(['emoji' => '🦷']);
+
+        $this->assertStringContainsString('🦷', $this->carrusel($this->get('/')->assertOk()->getContent()));
+    }
+
+    // ---------- Botón ----------
 
     public function test_el_aviso_sin_boton_no_lo_muestra(): void
     {
         $this->anuncio(['titulo' => 'Solo informativo']);
 
-        $html = $this->get('/')->assertOk()->getContent();
-        $franja = substr($html, strpos($html, 'data-avisos'), strpos($html, 'id="inicio"') - strpos($html, 'data-avisos'));
-
-        $this->assertStringNotContainsString('<a ', $franja);
+        $this->assertStringNotContainsString('<a ', $this->carrusel($this->get('/')->assertOk()->getContent()));
     }
 
     public function test_el_aviso_con_enlace_usa_el_texto_por_defecto(): void
     {
         $this->anuncio(['boton_enlace' => '/login']);
 
-        $this->get('/')->assertOk()
-            ->assertSee('href="/login"', false)
-            ->assertSee('Agendar cita');
+        $carrusel = $this->carrusel($this->get('/')->assertOk()->getContent());
+
+        $this->assertStringContainsString('href="/login"', $carrusel);
+        $this->assertStringContainsString('Agendar cita', $carrusel);
     }
 
     public function test_el_aviso_con_texto_y_sin_enlace_va_a_contacto(): void
     {
         $this->anuncio(['boton_texto' => 'Ver opciones']);
 
-        $html = $this->get('/')->assertOk()->assertSee('Ver opciones')->getContent();
-        $franja = substr($html, strpos($html, 'data-avisos'), strpos($html, 'id="inicio"') - strpos($html, 'data-avisos'));
+        $carrusel = $this->carrusel($this->get('/')->assertOk()->getContent());
 
-        $this->assertStringContainsString('href="#contacto"', $franja);
-    }
-
-    public function test_maximo_tres_avisos_los_mas_recientes_primero(): void
-    {
-        foreach (range(1, 5) as $n) {
-            $this->anuncio(['titulo' => "Aviso número $n", 'created_at' => now()->addMinutes($n)]);
-        }
-
-        $html = $this->get('/')->assertOk()->getContent();
-
-        $this->assertStringContainsString('Aviso número 5', $html);
-        $this->assertStringContainsString('Aviso número 4', $html);
-        $this->assertStringContainsString('Aviso número 3', $html);
-        $this->assertStringNotContainsString('Aviso número 2', $html);
-        $this->assertLessThan(strpos($html, 'Aviso número 4'), strpos($html, 'Aviso número 5'));
-    }
-
-    // ---------- Promociones ----------
-
-    public function test_una_promocion_vigente_sale_en_su_seccion_despues_de_la_cinta(): void
-    {
-        $this->anuncio([
-            'tipo' => 'promocion',
-            'titulo' => 'Blanqueamiento 2x1',
-            'descripcion' => 'Trae a un acompañante',
-            'emoji' => '✨',
-            'fecha_fin' => Carbon::now('America/Mexico_City')->addDays(5)->toDateString(),
-        ]);
-
-        $respuesta = $this->get('/')->assertOk()
-            ->assertSee('id="promociones"', false)
-            ->assertSee('PROMOCIONES')
-            ->assertSee('Blanqueamiento 2x1')
-            ->assertSee('Trae a un acompañante')
-            ->assertSee('✨')
-            ->assertSee('Válida hasta el ' . Carbon::now('America/Mexico_City')->addDays(5)->format('d/m/Y'))
-            ->assertDontSee('data-avisos', false);
-
-        $html = $respuesta->getContent();
-        $this->assertGreaterThan(strpos($html, 'CONSULTA GRATIS'), strpos($html, 'id="promociones"'));
-        $this->assertLessThan(strpos($html, 'id="nosotros"'), strpos($html, 'id="promociones"'));
+        $this->assertStringContainsString('Ver opciones', $carrusel);
+        $this->assertStringContainsString('href="#contacto"', $carrusel);
     }
 
     public function test_la_promocion_siempre_lleva_boton_con_valores_por_defecto(): void
     {
-        $this->anuncio(['tipo' => 'promocion', 'titulo' => 'Promo sin botón configurado']);
+        $this->anuncio(['tipo' => 'promocion']);
 
-        $html = $this->get('/')->assertOk()->getContent();
-        $seccion = substr($html, strpos($html, 'id="promociones"'), strpos($html, 'id="nosotros"') - strpos($html, 'id="promociones"'));
+        $carrusel = $this->carrusel($this->get('/')->assertOk()->getContent());
 
-        $this->assertStringContainsString('href="#contacto"', $seccion);
-        $this->assertStringContainsString('Agendar cita', $seccion);
-        $this->assertStringNotContainsString('Válida hasta', $seccion);
+        $this->assertStringContainsString('href="#contacto"', $carrusel);
+        $this->assertStringContainsString('Agendar cita', $carrusel);
     }
 
-    public function test_los_enlaces_externos_abren_aparte_y_sin_opener(): void
+    public function test_los_enlaces_externos_abren_aparte_y_los_internos_no(): void
     {
-        $this->anuncio(['tipo' => 'promocion', 'boton_texto' => 'Escríbenos', 'boton_enlace' => 'https://wa.me/527531234567']);
+        $this->anuncio(['tipo' => 'promocion', 'titulo' => 'Externa', 'boton_enlace' => 'https://wa.me/527531234567']);
+        $this->anuncio(['tipo' => 'promocion', 'titulo' => 'Interna', 'boton_enlace' => '/login']);
 
-        $this->get('/')->assertOk()
-            ->assertSee('href="https://wa.me/527531234567"', false)
-            ->assertSee('target="_blank" rel="noopener noreferrer"', false)
-            ->assertSee('Escríbenos');
-    }
+        $carrusel = $this->carrusel($this->get('/')->assertOk()->getContent());
 
-    public function test_los_enlaces_internos_no_abren_pestana_nueva(): void
-    {
-        $this->anuncio(['tipo' => 'promocion', 'boton_enlace' => '/login']);
-
-        $html = $this->get('/')->assertOk()->getContent();
-        $seccion = substr($html, strpos($html, 'id="promociones"'), strpos($html, 'id="nosotros"') - strpos($html, 'id="promociones"'));
-
-        $this->assertStringNotContainsString('target="_blank"', $seccion);
-    }
-
-    public function test_maximo_seis_promociones(): void
-    {
-        foreach (range(1, 8) as $n) {
-            $this->anuncio(['tipo' => 'promocion', 'titulo' => "Promo número $n", 'created_at' => now()->addMinutes($n)]);
-        }
-
-        $html = $this->get('/')->assertOk()->getContent();
-
-        $this->assertSame(6, substr_count($html, 'Promo número'));
-        $this->assertStringContainsString('Promo número 8', $html);
-        $this->assertStringNotContainsString('Promo número 2', $html);
-    }
-
-    public function test_aviso_y_promocion_conviven(): void
-    {
-        $this->anuncio(['titulo' => 'Aviso A']);
-        $this->anuncio(['tipo' => 'promocion', 'titulo' => 'Promo B']);
-
-        $this->get('/')->assertOk()
-            ->assertSee('data-avisos', false)
-            ->assertSee('data-promociones', false)
-            ->assertSee('Aviso A')
-            ->assertSee('Promo B');
+        $this->assertSame(1, substr_count($carrusel, 'target="_blank" rel="noopener noreferrer"'));
+        $this->assertStringContainsString('href="https://wa.me/527531234567"', $carrusel);
     }
 
     // ---------- Seguridad del contenido ----------
@@ -241,20 +308,23 @@ class LandingAnunciosTest extends TestCase
     public function test_el_html_en_los_textos_se_muestra_escapado(): void
     {
         $this->anuncio(['titulo' => '<script>alert("a")</script>', 'descripcion' => '<img src=x onerror=alert(1)>', 'emoji' => '<b>']);
-        $this->anuncio(['tipo' => 'promocion', 'titulo' => '<script>alert("p")</script>', 'descripcion' => '<a href="http://evil">x</a>']);
 
         $respuesta = $this->get('/')->assertOk();
 
         $respuesta->assertDontSee('<script>alert("a")</script>', false)
-            ->assertDontSee('<script>alert("p")</script>', false)
             ->assertDontSee('<img src=x', false)
-            ->assertDontSee('<a href="http://evil">', false)
             ->assertSee('&lt;script&gt;alert(&quot;a&quot;)&lt;/script&gt;', false);
+    }
+
+    public function test_el_titulo_con_comillas_no_rompe_el_alt_de_la_imagen(): void
+    {
+        $this->anuncio(['titulo' => 'x" onerror="alert(1)', 'imagen' => 'anuncios/01jabcdefghjkmnpqrstvwxyz0.png']);
+
+        $this->get('/')->assertOk()->assertDontSee('onerror="alert(1)"', false);
     }
 
     public function test_una_comilla_en_el_enlace_no_puede_romper_el_atributo(): void
     {
-        // Aunque el formulario lo rechaza, la vista escapa por si llegara a la base
         $this->anuncio(['tipo' => 'promocion', 'boton_enlace' => '/x" onclick="alert(1)']);
 
         $this->get('/')->assertOk()->assertDontSee('onclick="alert(1)"', false);

@@ -89,6 +89,8 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->grou
     Route::get('/anuncios/{id}/editar', [AnuncioController::class, 'edit'])->name('anuncios.edit');
     Route::put('/anuncios/{id}', [AnuncioController::class, 'update'])->name('anuncios.update');
     Route::patch('/anuncios/{id}/toggle', [AnuncioController::class, 'toggle'])->name('anuncios.toggle');
+    Route::patch('/anuncios/{id}/subir', [AnuncioController::class, 'subir'])->name('anuncios.subir');
+    Route::patch('/anuncios/{id}/bajar', [AnuncioController::class, 'bajar'])->name('anuncios.bajar');
     Route::delete('/anuncios/{id}', [AnuncioController::class, 'destroy'])->name('anuncios.destroy');
 
     // Bloqueos de agenda

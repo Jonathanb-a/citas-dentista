@@ -5,7 +5,7 @@
         <h1 class="font-bold text-gray-800 text-2xl mt-2">Editar anuncio</h1>
     </div>
 
-    <form method="POST" action="{{ route('admin.anuncios.update', $anuncio->id) }}">
+    <form method="POST" action="{{ route('admin.anuncios.update', $anuncio->id) }}" enctype="multipart/form-data">
         @csrf
         @method('PUT')
         @include('admin.anuncios.partials.form', ['anuncio' => $anuncio])

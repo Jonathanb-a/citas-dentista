@@ -47,6 +47,17 @@ return [
             'report' => false,
         ],
 
+        // Imágenes subidas desde el panel (anuncios, landing, etc.). IMAGENES_ROOT debe
+        // apuntar al Volume de Railway; IMAGENES_URL solo si se sirven desde un CDN.
+        'imagenes' => [
+            'driver' => 'local',
+            'root' => (env('IMAGENES_ROOT') ?: storage_path('app/public/imagenes')),
+            'url' => (env('IMAGENES_URL') ?: '/imagenes'),
+            'visibility' => 'public',
+            'throw' => false,
+            'report' => false,
+        ],
+
         's3' => [
             'driver' => 's3',
             'key' => env('AWS_ACCESS_KEY_ID'),
@@ -75,6 +86,7 @@ return [
 
     'links' => [
         public_path('storage') => storage_path('app/public'),
+        public_path('imagenes') => (env('IMAGENES_ROOT') ?: storage_path('app/public/imagenes')),
     ],
 
 ];

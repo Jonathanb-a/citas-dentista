@@ -52,6 +52,29 @@
         @error('descripcion') <p class="text-red-500 text-xs">{{ $message }}</p> @enderror
     </div>
 
+    {{-- Imagen --}}
+    <div class="flex flex-col gap-3" x-data="{ quitar: false, error: '' }">
+        <label class="text-gray-600 text-sm font-medium">Imagen <span class="text-gray-400 font-normal">(opcional)</span></label>
+
+        @if($anuncio && $anuncio->imagenUrl())
+            <div class="flex items-center gap-4" x-show="!quitar">
+                <img src="{{ $anuncio->imagenUrl() }}" alt="Imagen actual" class="w-32 h-20 object-cover rounded-lg border border-gray-100">
+                <label class="flex items-center gap-2 text-sm text-gray-600 cursor-pointer">
+                    <input type="checkbox" name="quitar_imagen" value="1" x-model="quitar" class="accent-[#d75078]">
+                    Quitar esta imagen
+                </label>
+            </div>
+            <p class="text-gray-400 text-xs" x-show="quitar" x-cloak>La imagen se borrará al guardar. <button type="button" class="underline" @click="quitar = false">Deshacer</button></p>
+        @endif
+
+        <input type="file" name="imagen" accept="image/jpeg,image/png,image/webp"
+               @change="error = ($event.target.files[0] && $event.target.files[0].size > {{ (int) config('imagenes.max_kb') * 1024 }}) ? 'Esa imagen pesa más de {{ round(config('imagenes.max_kb') / 1024, 1) }} MB.' : ''"
+               class="{{ $campo }} file:mr-4 file:rounded-lg file:border-0 file:bg-[#fde7ed] file:text-[#d75078] file:px-4 file:py-2 file:text-sm file:font-medium">
+        <p class="text-red-500 text-xs" x-show="error" x-text="error" x-cloak></p>
+        <p class="text-gray-400 text-xs">JPG, PNG o WebP, máximo {{ round(config('imagenes.max_kb') / 1024, 1) }} MB. Ideal 1200 × 675 px (horizontal 16:9); si es de otra forma se recorta al mostrarla.</p>
+        @error('imagen') <p class="text-red-500 text-xs">{{ $message }}</p> @enderror
+    </div>
+
     {{-- Vigencia --}}
     <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <div class="flex flex-col gap-1.5">

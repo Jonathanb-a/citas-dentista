@@ -26,7 +26,7 @@
     <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-8">
         <div>
             <h1 class="font-bold text-gray-800 text-2xl">Landing Page · Anuncios y promociones</h1>
-            <p class="font-light text-gray-400 text-sm mt-1">Los avisos salen en una franja arriba de la página y las promociones en su propia sección</p>
+            <p class="font-light text-gray-400 text-sm mt-1">Todos los vigentes salen en un carrusel de la página, en el orden de esta lista</p>
         </div>
         <a href="{{ route('admin.anuncios.create') }}"
            class="bg-[#d75078] text-white text-sm font-medium px-5 py-3 rounded-xl hover:bg-[#f285a2] transition-all duration-300 flex items-center justify-center gap-2">
@@ -48,6 +48,7 @@
                 <table class="w-full">
                     <thead>
                         <tr class="border-b border-gray-100">
+                            <th class="text-left py-3 px-4 text-gray-400 text-xs font-medium">ORDEN</th>
                             <th class="text-left py-3 px-4 text-gray-400 text-xs font-medium">ANUNCIO</th>
                             <th class="text-left py-3 px-4 text-gray-400 text-xs font-medium">TIPO</th>
                             <th class="text-left py-3 px-4 text-gray-400 text-xs font-medium">VIGENCIA</th>
@@ -60,10 +61,20 @@
                         @php $estado = $anuncio->estado($hoy); @endphp
                         <tr class="border-b border-gray-50 hover:bg-[#FFF6F6] transition-colors duration-200">
                             <td class="py-4 px-4">
-                                <span class="text-gray-700 text-sm font-medium">{{ $anuncio->emoji }} {{ $anuncio->titulo }}</span>
-                                @if($anuncio->descripcion)
-                                    <p class="text-gray-400 text-xs mt-0.5 max-w-md truncate">{{ $anuncio->descripcion }}</p>
-                                @endif
+                                @include('admin.anuncios.partials.orden')
+                            </td>
+                            <td class="py-4 px-4">
+                                <div class="flex items-center gap-3">
+                                    @if($anuncio->imagenUrl())
+                                        <img src="{{ $anuncio->imagenUrl() }}" alt="" class="w-16 h-10 object-cover rounded-lg border border-gray-100 shrink-0">
+                                    @endif
+                                    <div class="min-w-0">
+                                        <span class="text-gray-700 text-sm font-medium">{{ $anuncio->emoji }} {{ $anuncio->titulo }}</span>
+                                        @if($anuncio->descripcion)
+                                            <p class="text-gray-400 text-xs mt-0.5 max-w-md truncate">{{ $anuncio->descripcion }}</p>
+                                        @endif
+                                    </div>
+                                </div>
                             </td>
                             <td class="py-4 px-4 text-gray-500 text-sm">{{ \App\Models\Anuncio::TIPOS[$anuncio->tipo] ?? $anuncio->tipo }}</td>
                             <td class="py-4 px-4 text-gray-500 text-sm">{{ $vigencia($anuncio) }}</td>
@@ -99,6 +110,9 @@
                 @foreach($anuncios as $anuncio)
                 @php $estado = $anuncio->estado($hoy); @endphp
                 <div class="border border-gray-100 rounded-xl p-4 flex flex-col gap-3">
+                    @if($anuncio->imagenUrl())
+                        <img src="{{ $anuncio->imagenUrl() }}" alt="" class="w-full h-32 object-cover rounded-lg">
+                    @endif
                     <div class="flex items-start justify-between gap-2">
                         <p class="text-gray-800 text-sm font-medium">{{ $anuncio->emoji }} {{ $anuncio->titulo }}</p>
                         <span class="{{ $etiquetas[$estado][1] }} text-xs font-medium px-3 py-1 rounded-full whitespace-nowrap">{{ $etiquetas[$estado][0] }}</span>
@@ -107,7 +121,11 @@
                         <p class="text-gray-500 text-sm">{{ $anuncio->descripcion }}</p>
                     @endif
                     <p class="text-gray-400 text-xs">{{ \App\Models\Anuncio::TIPOS[$anuncio->tipo] ?? $anuncio->tipo }} · {{ $vigencia($anuncio) }}</p>
-                    <div class="flex flex-wrap gap-2 pt-2 border-t border-gray-50">
+                    <div class="flex items-center gap-2 pt-2 border-t border-gray-50">
+                        <span class="text-gray-400 text-xs">Posición</span>
+                        @include('admin.anuncios.partials.orden')
+                    </div>
+                    <div class="flex flex-wrap gap-2">
                         <a href="{{ route('admin.anuncios.edit', $anuncio->id) }}"
                            class="flex-1 min-w-[90px] text-center px-3 py-2 bg-[#fde7ed] text-[#d75078] text-xs font-medium rounded-lg">Editar</a>
                         <form method="POST" action="{{ route('admin.anuncios.toggle', $anuncio->id) }}" class="flex-1 min-w-[90px]">

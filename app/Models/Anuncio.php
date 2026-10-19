@@ -61,6 +61,8 @@ class Anuncio extends Model
         'boton_enlace',
         'emoji',
         'color',
+        'imagen',
+        'orden',
     ];
 
     protected $casts = [
@@ -68,6 +70,12 @@ class Anuncio extends Model
         'fecha_fin' => 'date',
         'activo' => 'boolean',
     ];
+
+    // Orden del carrusel: primero el que tiene el número más bajo
+    public function scopeOrdenados($query)
+    {
+        return $query->orderBy('orden')->orderBy('id');
+    }
 
     // ---------- Vigencia ----------
 
@@ -106,6 +114,12 @@ class Anuncio extends Model
     }
 
     // ---------- Presentación ----------
+
+    // URL pública de la imagen subida, o null si no tiene
+    public function imagenUrl(): ?string
+    {
+        return app(\App\Services\ImagenService::class)->url($this->imagen);
+    }
 
     public function paleta(): array
     {
@@ -156,6 +170,8 @@ class Anuncio extends Model
                 }
             }],
             'color' => 'required|in:' . implode(',', array_keys(self::COLORES)),
+            'imagen' => \App\Services\ImagenService::reglas(),
+            'quitar_imagen' => 'nullable|boolean',
         ];
     }
 
@@ -170,7 +186,7 @@ class Anuncio extends Model
             'fecha_fin.after_or_equal' => 'La fecha final no puede ser anterior a la inicial.',
             'boton_texto.max' => 'El texto del botón no puede pasar de 40 caracteres.',
             'color.in' => 'Elige un color de la lista.',
-        ];
+        ] + \App\Services\ImagenService::mensajes();
     }
 
     /**

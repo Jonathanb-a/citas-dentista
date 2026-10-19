@@ -100,17 +100,70 @@ ponerlos en el .env local y en las variables de Railway:
   referencia y una prueba lo compara. Si algún día cambias la landing a
   propósito, regenera ese archivo; si la prueba falla sin que lo
   hayas hecho, algo se coló en la landing
-- Avisos vigentes: franja arriba (`partials/landing-avisos`, máx. 3).
-  Promociones vigentes: sección `#promociones` tras la cinta rosa de
-  servicios (`partials/landing-promociones`, máx. 6). La cinta rosa es
-  texto fijo de la vista, no son anuncios
+- Avisos y promociones vigentes salen juntos en un carrusel
+  (`partials/landing-carrusel`, sección `#novedades`, máx. 8 slides) tras
+  la cinta rosa de servicios y antes de `#nosotros`, en el orden del
+  panel (`anuncios.orden`, se cambia con ▲▼). La cinta rosa es texto fijo
+  de la vista, no son anuncios. Alpine: `resources/js/carrusel-anuncios.js`
+  (avance cada 6 s, pausa con mouse/foco/toque, flechas, puntos, deslizar;
+  con una sola slide no hay controles ni Alpine)
 - Vigente = activo y dentro de las fechas (extremos incluidos, ambas
   opcionales). "Hoy" se calcula en `config('consultorio.zona_horaria')`
   (America/Mexico_City), porque la app corre en UTC
 - Todo texto es plano y se escapa. Enlaces: solo https/http, ruta `/…`,
   ancla `#…` o `tel:`. El color es de una paleta fija (rosa, verde, gris)
-  con clases completas en `Anuncio::COLORES`; no se suben imágenes
+  con clases completas en `Anuncio::COLORES`
 - Si la consulta de anuncios falla, la landing se ve sin anuncios (no 500)
+
+## Imágenes subidas (ImagenService)
+- `App\Services\ImagenService` es el único camino para subir imágenes
+  (anuncios hoy; landing editable, transformaciones u otros módulos
+  después): `guardar($archivo, 'carpeta')` devuelve la ruta relativa que
+  se guarda en la base; `eliminar($ruta)`, `reemplazar(...)`, `url($ruta)`
+  y las reglas de formulario `ImagenService::reglas()`. En la base solo se
+  guarda la ruta, nunca una URL
+- Valida el contenido real: JPG, PNG o WebP (no SVG ni GIF), máx. 5 MB y
+  4096 px por lado (`config/imagenes.php`). Nombre aleatorio y extensión
+  según el contenido. No recodifica (el PHP local no tiene GD)
+- Al reemplazar o eliminar un registro hay que borrar la imagen con
+  `eliminar()`, después de guardar en la base. `eliminar()` ignora rutas
+  que no sean las que genera `guardar()`
+- Disco `imagenes` (config/filesystems.php), elegido por .env:
+  `IMAGENES_ROOT` (carpeta; por defecto `storage/app/public/imagenes`),
+  `IMAGENES_URL` (por defecto `/imagenes`, solo si se usa un CDN) e
+  `IMAGENES_DISK` (para cambiar a `s3` sin tocar código). `php artisan
+  storage:link` crea `public/imagenes` apuntando a `IMAGENES_ROOT`
+- **Railway** (los archivos del contenedor se pierden en cada deploy):
+  1. Crear un Volume en el servicio, montado en `/data`
+  2. Variable `IMAGENES_ROOT=/data/imagenes`
+  3. El enlace `public/imagenes` hay que recrearlo en cada deploy
+     (`public/` se reconstruye; sin enlace las imágenes dan 404). Con el
+     builder **Railpack** (el de los servicios nuevos; se ve en Settings →
+     Build) el script de arranque ya corre `php artisan storage:link`
+     (y también `migrate --force`: las migraciones nuevas se aplican
+     solas al desplegar). Con Nixpacks o Dockerfile hay que agregar
+     `php artisan storage:link --force` al comando de pre-deploy
+  4. Si al subir sale "permission denied": variable `RAILWAY_RUN_UID=0`
+  5. Límite de 5 MB por imagen: con Railpack no hay que configurar nada
+     (su php.ini trae `upload_max_filesize = 0` y `post_max_size = 0`, es
+     decir sin límite, y su Caddyfile no limita el cuerpo; revisado en el
+     repo de Railpack, verificar con una subida real). Con Nixpacks/nginx
+     o un Dockerfile propio, los valores por defecto son 2 MB (PHP) y
+     1 MB (nginx) y hay que subirlos: `upload_max_filesize=6M`,
+     `post_max_size=8M` y `client_max_body_size 6m;`. Si Railway rechaza
+     la subida con 413 es el servidor web; si Laravel dice "No se pudo
+     subir la imagen" es PHP
+  Un Volume sirve solo a una réplica y no tiene respaldo automático. Si
+  el enlace público no funciona en Railway, plan B: servir las imágenes
+  desde una ruta de Laravel con caché
+- Local: hay dos PHP en la máquina y no tienen la misma configuración.
+  Laragon (`C:\laragon\bin\php\...`) tiene GD activo y límites de 2 GB;
+  XAMPP (`C:\xampp\php`, el que está en el PATH y usa `php artisan`)
+  tiene límites de 40 MB y GD desactivado (`;extension=gd`)
+- En local con Windows, `storage:link` puede pedir una consola de
+  administrador para crear el enlace
+- Pruebas: `Storage::fake('imagenes')` y `tests/Support/ImagenesDePrueba`
+  (bytes reales de imagen, sin GD)
 
 ## Avisos por Telegram (solo a la clínica)
 - `TelegramService` avisa a la doctora y la asistente por la Bot API de
