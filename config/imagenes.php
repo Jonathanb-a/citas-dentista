@@ -16,4 +16,11 @@ return [
 
     // Lado máximo en píxeles (evita imágenes gigantes que saturan memoria al mostrarse)
     'max_px' => 4096,
+
+    // Redimensionado al guardar (solo si la extensión GD está cargada; si no, se guarda tal cual).
+    // Reduce a este ancho máximo sin ampliar nunca, corrige la rotación EXIF y quita los metadatos.
+    // En Railway GD se instala con la variable RAILPACK_PHP_EXTENSIONS=gd.
+    'redimensionar' => (bool) env('IMAGENES_REDIMENSIONAR', true),
+    'ancho_max' => 1600,
+    'calidad' => 85, // JPG y WebP
 ];

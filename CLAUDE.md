@@ -124,7 +124,25 @@ ponerlos en el .env local y en las variables de Railway:
   guarda la ruta, nunca una URL
 - Valida el contenido real: JPG, PNG o WebP (no SVG ni GIF), máx. 5 MB y
   4096 px por lado (`config/imagenes.php`). Nombre aleatorio y extensión
-  según el contenido. No recodifica (el PHP local no tiene GD)
+  según el contenido
+- **Redimensionado al guardar** (opcional, solo si la extensión GD está
+  cargada): reduce a 1600 px de ancho máximo sin ampliar nunca, conserva
+  formato y transparencia (JPG, PNG, WebP), aplica la rotación EXIF de las
+  fotos de celular y quita los metadatos (EXIF, ubicación GPS, comentarios).
+  Siempre vuelve a codificar, también las imágenes chicas (JPG y WebP con
+  calidad 85). Se guarda el **original sin tocar**, sin error, cuando: no
+  hay GD, está apagado (`IMAGENES_REDIMENSIONAR=false`), el WebP es
+  animado (GD solo lee el primer cuadro), no alcanza la memoria (se calcula
+  antes, porque quedarse sin memoria es un error fatal que ningún
+  try/catch atrapa) o GD falla por cualquier motivo (esto último se
+  registra en el log). Nunca impide una subida. Valores en
+  `config/imagenes.php` (`ancho_max`, `calidad`)
+- **GD en Railway**: no se declara `ext-gd` en composer.json (rompería
+  `composer` y el arranque en máquinas sin GD). En el servicio de Railway
+  se agrega la variable `RAILPACK_PHP_EXTENSIONS=gd` (Railpack instala esa
+  extensión) y se redespliega. Sin ella todo funciona igual, solo que las
+  imágenes se guardan sin reducir. Se comprueba subiendo una foto grande y
+  mirando sus dimensiones
 - Al reemplazar o eliminar un registro hay que borrar la imagen con
   `eliminar()`, después de guardar en la base. `eliminar()` ignora rutas
   que no sean las que genera `guardar()`
@@ -163,7 +181,12 @@ ponerlos en el .env local y en las variables de Railway:
 - En local con Windows, `storage:link` puede pedir una consola de
   administrador para crear el enlace
 - Pruebas: `Storage::fake('imagenes')` y `tests/Support/ImagenesDePrueba`
-  (bytes reales de imagen, sin GD)
+  (bytes reales de imagen, sin GD). Las pruebas del redimensionado
+  (`ImagenRedimensionadoTest`) que necesitan GD se omiten solas si no está
+  cargada. Para correrlas con el PHP de XAMPP, que no la trae activa:
+  `php -d extension=gd vendor/bin/phpunit` (con `php artisan test` la
+  opción `-d` no llega al proceso de pruebas; o se descomenta
+  `extension=gd` en `C:\xampp\php\php.ini`)
 
 ## Avisos por Telegram (solo a la clínica)
 - `TelegramService` avisa a la doctora y la asistente por la Bot API de
