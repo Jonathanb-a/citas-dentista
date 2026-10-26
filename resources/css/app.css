@@ -60,3 +60,27 @@
         animation-delay: var(--retraso, 0ms);
     }
 }
+
+/* Hero: ilustración del diente cuando no hay imagen (solo transform y opacity) */
+@keyframes hero-flotar {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-10px); }
+}
+
+@keyframes hero-destello {
+    0%, 100% { opacity: 0.25; transform: scale(0.8); }
+    50% { opacity: 1; transform: scale(1); }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+    .hero-flotar {
+        animation: hero-flotar 6s ease-in-out infinite;
+    }
+
+    .hero-destello {
+        transform-box: fill-box;
+        transform-origin: center;
+        animation: hero-destello 3s ease-in-out infinite;
+        animation-delay: var(--retraso, 0ms);
+    }
+}
