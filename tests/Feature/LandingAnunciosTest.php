@@ -158,6 +158,29 @@ class LandingAnunciosTest extends TestCase
         $this->assertStringContainsString('@touchend="terminarToque($event)"', $carrusel);
     }
 
+    public function test_con_varias_slides_se_maneja_con_teclado_y_se_puede_pausar(): void
+    {
+        $this->anuncio(['titulo' => 'Uno']);
+        $this->anuncio(['titulo' => 'Dos']);
+
+        $carrusel = $this->carrusel($this->get('/')->assertOk()->getContent());
+
+        $this->assertStringContainsString('@keydown.arrow-left.prevent="anterior()"', $carrusel);
+        $this->assertStringContainsString('@keydown.arrow-right.prevent="siguiente()"', $carrusel);
+        $this->assertStringContainsString('@click="alternarPausa()"', $carrusel);
+        $this->assertStringContainsString("'Pausar el avance automático'", $carrusel);
+        $this->assertStringContainsString(':aria-live=', $carrusel);
+        // Flechas, puntos y pausa con área táctil de 44 px
+        $this->assertGreaterThanOrEqual(5, substr_count($carrusel, 'h-11'));
+    }
+
+    public function test_con_una_sola_slide_no_hay_boton_de_pausa(): void
+    {
+        $this->anuncio(['titulo' => 'Única']);
+
+        $this->assertStringNotContainsString('alternarPausa', $this->carrusel($this->get('/')->assertOk()->getContent()));
+    }
+
     public function test_solo_la_primera_slide_se_ve_antes_de_que_cargue_alpine(): void
     {
         foreach (['Uno', 'Dos', 'Tres'] as $titulo) {

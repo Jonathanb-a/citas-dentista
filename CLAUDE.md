@@ -112,8 +112,10 @@ ponerlos en el .env local y en las variables de Railway:
   (`partials/landing-carrusel`, sección `#novedades`, máx. 8 slides) tras
   `#tratamientos` y antes de `#nosotros`, en el orden del
   panel (`anuncios.orden`, se cambia con ▲▼). Alpine: `resources/js/carrusel-anuncios.js`
-  (avance cada 6 s, pausa con mouse/foco/toque, flechas, puntos, deslizar;
-  con una sola slide no hay controles ni Alpine)
+  (avance cada 6 s, pausa con mouse/foco/toque, botón Pausar/Reanudar,
+  flechas en pantalla y del teclado, puntos, deslizar; controles de 44 px.
+  Con "reducir movimiento" no avanza solo ni muestra el botón de pausa; con
+  una sola slide no hay controles ni Alpine)
 - Vigente = activo y dentro de las fechas (extremos incluidos, ambas
   opcionales). "Hoy" se calcula en `config('consultorio.zona_horaria')`
   (America/Mexico_City), porque la app corre en UTC
@@ -173,11 +175,16 @@ ponerlos en el .env local y en las variables de Railway:
   desde ahí manda la base de datos. Mientras no se ha tocado, un elemento se
   identifica en las URLs del panel por la clave del original (`galeria-1`);
   después, por su id. Un elemento que viene de un original puede volver a su
-  imagen original; uno agregado por la doctora no. Con 3 fotos o menos se
-  ven todas a la vez y la landing no muestra flechas ni puntos
-- En la landing las fotos van a Alpine como un arreglo JavaScript escrito en
-  el atributo `x-data`: los textos se escapan primero para JavaScript
-  (`$js` en `welcome.blade.php`) y luego para HTML. No cambiar ese orden
+  imagen original; uno agregado por la doctora no
+- En la landing la galería es una cuadrícula que escribe Blade (cada foto con
+  `loading="lazy"` y su título como texto alternativo; con 1 o 2 fotos queda
+  centrada) y un lightbox en Alpine (`resources/js/galeria-lightbox.js`:
+  Esc, flechas, foco atrapado y de vuelta a la foto). El lightbox lee los
+  datos de los atributos `data-*` de cada foto, escapados por Blade: no hay
+  JavaScript armado a mano. Sin fotos, la sección no se muestra
+- `data-aparecer` anima con `fill-mode: backwards` y no `both`: un transform
+  que se queda puesto hace de contenedor de los `position: fixed` de adentro
+  (el lightbox quedaría encerrado en la sección)
 - Testimonios: se quitaron de la landing (eran 5 tarjetas inventadas). No
   hay tabla ni panel de reseñas; si se agregan, que sean opiniones reales
   de pacientes, con su permiso, y que la sección no se muestre vacía

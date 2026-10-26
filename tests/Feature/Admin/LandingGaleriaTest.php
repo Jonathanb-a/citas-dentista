@@ -57,13 +57,12 @@ class LandingGaleriaTest extends TestCase
         return $this->get('/')->assertOk()->getContent();
     }
 
-    /** Las fotos que la landing entrega a Alpine, en orden: [src, titulo, subtitulo] ya decodificados */
+    /** Las fotos de la cuadrícula de la landing, en orden: [src, titulo, subtitulo] ya decodificados */
     private function galeriaEnLanding(): array
     {
-        $html = html_entity_decode($this->landing(), ENT_QUOTES);
-        preg_match_all("/\{ src: '((?:[^'\\\\]|\\\\.)*)', titulo: '((?:[^'\\\\]|\\\\.)*)', subtitulo: '((?:[^'\\\\]|\\\\.)*)' \}/", $html, $coincidencias, PREG_SET_ORDER);
+        preg_match_all('/<li data-galeria-foto data-src="([^"]*)" data-titulo="([^"]*)" data-subtitulo="([^"]*)"/', $this->landing(), $coincidencias, PREG_SET_ORDER);
 
-        return array_map(fn ($m) => [$m[1], stripcslashes($m[2]), stripcslashes($m[3])], $coincidencias);
+        return array_map(fn ($m) => array_map(fn ($v) => html_entity_decode($v, ENT_QUOTES), [$m[1], $m[2], $m[3]]), $coincidencias);
     }
 
     private function archivos(): array
@@ -445,33 +444,56 @@ class LandingGaleriaTest extends TestCase
 
     // ---------- Cómo se ve en la landing ----------
 
-    public function test_las_flechas_solo_aparecen_con_mas_de_tres_fotos(): void
+    public function test_todas_las_fotos_salen_en_cuadricula_con_lazy_y_texto_alternativo(): void
     {
-        $this->assertStringContainsString('@click="anterior()"', $this->landing(), '5 fotos');
-        $this->assertStringContainsString('@click="siguiente()"', $this->landing(), '5 fotos');
-
-        $this->actingAs($this->admin)->delete(route('admin.landing.galeria.eliminar', 'galeria-1')); // quedan 4
-        $this->assertStringContainsString('@click="anterior()"', $this->landing(), '4 fotos');
-
-        $this->actingAs($this->admin)->delete(route('admin.landing.galeria.eliminar', $this->idDe('galeria-2'))); // quedan 3
         $html = $this->landing();
-        $this->assertCount(3, $this->galeriaEnLanding());
-        $this->assertStringNotContainsString('@click="anterior()"', $html, '3 fotos: se ven todas a la vez, no hay nada que pasar');
-        $this->assertStringNotContainsString('@click="actual = index"', $html, '3 fotos: tampoco hay puntos');
+
+        $this->assertCount(5, $this->galeriaEnLanding());
+        foreach (['Diseño de Sonrisa', 'Ortodoncia', 'Blanqueamiento', 'Implantes', 'Limpieza Dental'] as $titulo) {
+            $this->assertMatchesRegularExpression('#<img src="[^"]+" alt="' . preg_quote(e($titulo), '#') . '" loading="lazy"#', $html);
+            $this->assertStringContainsString('aria-label="Ampliar foto: ' . e($titulo) . '"', $html);
+        }
+        // Se ven todas a la vez: ya no hay carrusel con flechas ni puntos
+        $this->assertStringNotContainsString('@click="actual = index"', $html);
     }
 
-    public function test_la_galeria_se_centra_con_menos_de_tres_fotos(): void
+    public function test_el_lightbox_es_accesible_con_teclado(): void
     {
-        $this->assertStringNotContainsString('overflow-hidden justify-center', $this->landing());
+        $html = $this->landing();
 
+        $this->assertStringContainsString('x-data="galeriaLightbox()"', $html);
+        $this->assertStringContainsString('@keydown.escape.window="cerrar()"', $html);
+        $this->assertStringContainsString('role="dialog" aria-modal="true"', $html);
+        $this->assertStringContainsString('@keydown.tab="atraparFoco($event)"', $html);
+        $this->assertStringContainsString('@keydown.arrow-right.prevent="siguiente()"', $html);
+        foreach (['Foto anterior', 'Cerrar', 'Foto siguiente'] as $boton) {
+            $this->assertStringContainsString('aria-label="' . $boton . '"', $html);
+        }
+        // Empieza cerrado aunque Alpine no haya cargado
+        $this->assertMatchesRegularExpression('/<div x-show="abierta" style="display: none"/', $html);
+    }
+
+    public function test_con_menos_de_tres_fotos_la_cuadricula_queda_centrada(): void
+    {
         foreach (['galeria-1', 'galeria-2', 'galeria-3'] as $original) {
             $this->actingAs($this->admin)->delete(route('admin.landing.galeria.eliminar', $original));
         }
 
-        $this->assertStringContainsString('flex gap-6 overflow-hidden justify-center', $this->landing());
+        $this->assertCount(2, $this->galeriaEnLanding());
+        $this->assertStringContainsString('<ul class="flex flex-wrap justify-center gap-6">', $this->landing());
     }
 
-    public function test_los_textos_con_comillas_y_html_no_rompen_el_javascript_ni_la_pagina(): void
+    public function test_sin_fotos_la_seccion_no_se_muestra(): void
+    {
+        config(['landing.colecciones.galeria.originales' => []]);
+
+        $this->get('/')->assertOk()
+            ->assertDontSee('id="galeria"', false)
+            ->assertDontSee('galeriaLightbox', false)
+            ->assertSee('id="contacto"', false);
+    }
+
+    public function test_los_textos_con_comillas_y_html_no_rompen_los_atributos_ni_la_pagina(): void
     {
         $this->agregar(['titulo' => "O'Brien \"x\" <b>negrita</b> \\ barra", 'subtitulo' => "Línea\nnueva </script><script>alert(1)</script>"]);
 
@@ -481,9 +503,9 @@ class LandingGaleriaTest extends TestCase
         $this->assertStringNotContainsString('<script>alert(1)</script>', $html);
 
         $fotos = $this->galeriaEnLanding();
-        $this->assertCount(6, $fotos, 'El arreglo de fotos debe seguir siendo válido.');
+        $this->assertCount(6, $fotos, 'Cada foto debe seguir siendo un elemento válido.');
         $this->assertSame("O'Brien \"x\" <b>negrita</b> \\ barra", $fotos[5][1]);
-        $this->assertSame('Línea nueva </script><script>alert(1)</script>', $fotos[5][2]);
+        $this->assertSame('Línea nueva </script><script>alert(1)</script>', $fotos[5][2]); // el subtítulo se guarda en una línea
     }
 
     public function test_una_ruta_de_imagen_invalida_en_la_base_no_rompe_la_landing(): void

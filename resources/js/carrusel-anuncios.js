@@ -1,5 +1,5 @@
 // Carrusel de anuncios de la landing (Alpine.data). Las slides vienen de Blade;
-// aquí solo se maneja cuál se ve: avance automático, pausa y deslizar con el dedo.
+// aquí solo se maneja cuál se ve: avance automático, pausa, teclado y deslizar con el dedo.
 const SEGUNDOS_POR_SLIDE = 6;
 const UMBRAL_DESLIZAR_PX = 50;
 
@@ -7,7 +7,9 @@ export default function carruselAnuncios(total) {
     return {
         actual: 0,
         total,
-        pausado: false,
+        pausado: false,     // mouse encima, foco dentro o dedo en la pantalla
+        detenido: false,    // el visitante pulsó "Pausar"
+        automatico: false,  // hay avance automático (no con una slide ni con "reducir movimiento")
         temporizador: null,
         inicioX: null,
 
@@ -18,6 +20,7 @@ export default function carruselAnuncios(total) {
 
             if (this.total < 2 || reducirMovimiento) return;
 
+            this.automatico = true;
             this.iniciarTemporizador();
         },
 
@@ -28,8 +31,14 @@ export default function carruselAnuncios(total) {
         iniciarTemporizador() {
             clearInterval(this.temporizador);
             this.temporizador = setInterval(() => {
-                if (!this.pausado && !document.hidden) this.siguiente(false);
+                if (!this.pausado && !this.detenido && !document.hidden) this.siguiente(false);
             }, SEGUNDOS_POR_SLIDE * 1000);
+        },
+
+        // Botón Pausar / Reanudar: detiene el avance automático hasta que lo reanude
+        alternarPausa() {
+            this.detenido = !this.detenido;
+            if (!this.detenido) this.iniciarTemporizador();
         },
 
         // manual = true cuando lo pidió el visitante: el conteo vuelve a empezar

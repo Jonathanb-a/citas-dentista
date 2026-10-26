@@ -129,86 +129,76 @@
     </div>
 
 </section>
-{{-- TRANSFORMACIONES REALES --}}
-<section id="galeria" data-aparecer class="w-full bg-white py-16 md:py-24 overflow-hidden">
+{{-- GALERÍA: cuadrícula con lightbox (resources/js/galeria-lightbox.js). Se oculta si no hay fotos --}}
+@if(count($galeria) > 0)
+@php
+    $focoGaleria = 'focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#a13153]';
+    $controlGaleria = 'flex h-11 w-11 items-center justify-center rounded-full bg-white/90 text-gray-800 hover:bg-white transition-[background-color] duration-300 ' . $focoGaleria;
+@endphp
+<section id="galeria" data-aparecer class="w-full bg-white py-16 md:py-24 px-6 md:px-[108px]" style="font-family: 'Montserrat', sans-serif;">
 
     {{-- Titulo --}}
-    <h2 class="font-bold text-gray-800 text-3xl md:text-5xl text-center mb-12"
-        style="font-family: 'Montserrat', sans-serif;">
+    <h2 class="font-bold text-gray-800 text-3xl md:text-5xl text-center mb-12">
         {{ $landing->texto('galeria.titulo') }}
     </h2>
 
-    {{-- Carrusel --}}
-    @php
-        // Texto dentro de comillas simples de JavaScript (después Blade lo escapa para el atributo HTML)
-        $js = fn ($valor) => str_replace(['\\', "'", "\r", "\n"], ['\\\\', "\\'", '', ' '], (string) $valor);
-    @endphp
-    <div x-data="{
-            actual: 0,
-            imagenes: [
-                @foreach($galeria as $foto)
-                { src: '{{ $foto['src'] }}', titulo: '{{ $js($foto['titulo']) }}', subtitulo: '{{ $js($foto['subtitulo']) }}' }{{ $loop->last ? '' : ',' }}
-                @endforeach
-            ],
-            siguiente() { this.actual = (this.actual + 1) % this.imagenes.length },
-            anterior() { this.actual = (this.actual - 1 + this.imagenes.length) % this.imagenes.length }
-         }"
-         class="relative px-6 md:px-[108px]">
+    <div x-data="galeriaLightbox()" @keydown.escape.window="cerrar()">
 
-        {{-- Imagenes --}}
-        <div @class(['flex gap-6 overflow-hidden', 'justify-center' => count($galeria) < 3])>
-            <template x-for="(imagen, index) in imagenes" :key="index">
-                <div class="flex-none w-full md:w-1/3 transition-all duration-500"
-                     x-show="index === actual || index === (actual + 1) % imagenes.length || index === (actual + 2) % imagenes.length">
+        {{-- Fotos: Blade las escribe (escapadas) y el lightbox lee sus datos. Con 1 o 2 fotos quedan centradas --}}
+        <ul class="flex flex-wrap justify-center gap-6">
+            @foreach($galeria as $i => $foto)
+                <li data-galeria-foto data-src="{{ $foto['src'] }}" data-titulo="{{ $foto['titulo'] }}" data-subtitulo="{{ $foto['subtitulo'] }}"
+                    class="w-full sm:w-[calc(50%-12px)] lg:w-[calc(33.333%-16px)]">
+                    <button type="button" @click="abrir({{ $i }}, $event)"
+                            aria-label="Ampliar foto: {{ $foto['titulo'] }}"
+                            class="group block w-full text-left rounded-3xl {{ $focoGaleria }}">
+                        <span class="block overflow-hidden rounded-3xl shadow-sm">
+                            <img src="{{ $foto['src'] }}" alt="{{ $foto['titulo'] }}" loading="lazy" decoding="async"
+                                 class="w-full h-[300px] md:h-[340px] object-cover motion-safe:transition-transform motion-safe:duration-500 motion-safe:group-hover:scale-105">
+                        </span>
+                        <span class="block px-2 pt-3">
+                            <span class="block font-bold text-gray-800 text-base">{{ $foto['titulo'] }}</span>
+                            <span class="block text-gray-600 text-sm">{{ $foto['subtitulo'] }}</span>
+                        </span>
+                    </button>
+                </li>
+            @endforeach
+        </ul>
 
-                    <div class="flex flex-col gap-3 cursor-pointer" @click="siguiente()">
-                        <img :src="imagen.src"
-                             :alt="imagen.titulo"
-                             class="w-full h-[300px] md:h-[350px] object-cover rounded-lg shadow-md hover:shadow-xl transition-shadow duration-300">
-                        <div class="px-2">
-                            <p class="font-bold text-gray-800 text-base" style="font-family: 'Montserrat', sans-serif;" x-text="imagen.titulo"></p>
-                            <p class="font-light text-gray-500 text-sm" style="font-family: 'Montserrat', sans-serif;" x-text="imagen.subtitulo"></p>
-                        </div>
-                    </div>
-
+        {{-- Lightbox --}}
+        <div x-show="abierta" style="display: none"
+             x-transition:enter="motion-safe:transition-opacity motion-safe:duration-200" x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100"
+             x-transition:leave="motion-safe:transition-opacity motion-safe:duration-150" x-transition:leave-start="opacity-100" x-transition:leave-end="opacity-0"
+             class="fixed inset-0 z-[60] flex items-center justify-center bg-gray-900/90 p-4 md:p-10"
+             @click.self="cerrar()">
+            <div x-ref="dialogo" role="dialog" aria-modal="true" :aria-label="'Foto ampliada: ' + foto.titulo"
+                 @keydown.tab="atraparFoco($event)"
+                 @keydown.arrow-right.prevent="siguiente()" @keydown.arrow-left.prevent="anterior()"
+                 class="relative flex w-full max-w-5xl flex-col items-center gap-4">
+                <img :src="foto.src" :alt="foto.titulo" class="max-h-[75vh] w-auto max-w-full rounded-2xl object-contain">
+                <div class="text-center text-white">
+                    <p class="font-bold text-lg" x-text="foto.titulo"></p>
+                    <p class="text-sm text-white/80" x-text="foto.subtitulo"></p>
+                    <p class="mt-1 text-xs text-white/80" x-show="fotos.length > 1" x-text="(actual + 1) + ' de ' + fotos.length"></p>
                 </div>
-            </template>
+
+                <div class="flex items-center gap-3">
+                    <button type="button" x-show="fotos.length > 1" @click="anterior()" aria-label="Foto anterior" class="{{ $controlGaleria }}">
+                        <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7"/></svg>
+                    </button>
+                    <button type="button" x-ref="cerrar" @click="cerrar()" aria-label="Cerrar" class="{{ $controlGaleria }}">
+                        <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M6 6l12 12M18 6L6 18"/></svg>
+                    </button>
+                    <button type="button" x-show="fotos.length > 1" @click="siguiente()" aria-label="Foto siguiente" class="{{ $controlGaleria }}">
+                        <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/></svg>
+                    </button>
+                </div>
+            </div>
         </div>
-
-        {{-- Botones navegacion (con 3 fotos o menos se ven todas a la vez: no hay nada que pasar) --}}
-        @if(count($galeria) > 3)
-        <div class="flex items-center justify-center gap-4 mt-10">
-
-            {{-- Anterior --}}
-            <button @click="anterior()"
-                    class="w-10 h-10 rounded-full border border-gray-300 flex items-center justify-center hover:bg-[#f285a2] hover:border-[#f285a2] hover:text-white transition-all duration-300">
-                <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
-                </svg>
-            </button>
-
-            {{-- Puntos --}}
-            <template x-for="(imagen, index) in imagenes" :key="index">
-                <button @click="actual = index"
-                        class="w-2.5 h-2.5 rounded-full transition-all duration-300"
-                        :class="actual === index ? 'bg-[#d75078] w-6' : 'bg-gray-300'">
-                </button>
-            </template>
-
-            {{-- Siguiente --}}
-            <button @click="siguiente()"
-                    class="w-10 h-10 rounded-full border border-gray-300 flex items-center justify-center hover:bg-[#f285a2] hover:border-[#f285a2] hover:text-white transition-all duration-300">
-                <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
-                </svg>
-            </button>
-
-        </div>
-        @endif
-
     </div>
 
 </section>
+@endif
 
 {{-- CERTIFICADOS --}}
 <section id="certificados" data-aparecer class="w-full bg-white py-16 md:py-24 px-6 md:px-[108px]">
