@@ -361,6 +361,6 @@ class LandingAnunciosTest extends TestCase
 
         $this->get('/')->assertOk()
             ->assertDontSee('inventado')
-            ->assertSee('bg-[#d75078] hover:bg-[#f285a2]', false);
+            ->assertSee('bg-[#c03a63] hover:bg-[#a13153]', false);
     }
 }
