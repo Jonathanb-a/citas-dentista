@@ -163,9 +163,10 @@
                     </label>
                 </div>
 
-                {{-- Boton --}}
+                {{-- Boton: tonos más oscuros que #d75078 (3.96:1 con blanco) para llegar a AA:
+                     #c03a63 = 5.22:1 y hover #a13153 = 6.82:1 --}}
                 <button type="submit"
-                        class="registro-entrada w-full min-h-11 bg-[#d75078] text-white text-sm font-semibold py-4 rounded-2xl hover:bg-[#f285a2] transition-colors duration-300 {{ $foco }}"
+                        class="registro-entrada w-full min-h-11 bg-[#c03a63] text-white text-sm font-semibold py-4 rounded-2xl hover:bg-[#a13153] transition-colors duration-300 {{ $foco }}"
                         style="--retraso: 780ms">
                     CREAR CUENTA
                 </button>
