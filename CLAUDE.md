@@ -185,9 +185,18 @@ ponerlos en el .env local y en las variables de Railway:
 - `data-aparecer` anima con `fill-mode: backwards` y no `both`: un transform
   que se queda puesto hace de contenedor de los `position: fixed` de adentro
   (el lightbox quedaría encerrado en la sección)
-- Testimonios: se quitaron de la landing (eran 5 tarjetas inventadas). No
-  hay tabla ni panel de reseñas; si se agregan, que sean opiniones reales
-  de pacientes, con su permiso, y que la sección no se muestre vacía
+- **Opiniones (`#testimonios`)**: pestaña "Opiniones" del panel
+  (`Admin\LandingTestimoniosController`), colección `testimonios` de
+  `config/landing.php` guardada en `landing_items` con
+  `LandingColeccionService`. Sin fotos y sin originales (mínimo 0, máximo
+  12). Campos: nombre (puede ser solo nombre e inicial), opinión,
+  calificación de 1 a 5 y la casilla obligatoria "El paciente autorizó
+  publicar esta opinión". La landing (`partials/landing-testimonios`, tras
+  la galería) muestra solo las autorizadas; sin ninguna, la sección no
+  aparece. Las 5 tarjetas inventadas que había antes se quitaron
+- `LandingColeccionService` sirve para listas con o sin imágenes
+  (`imagenes` en la colección) y con campos `texto`, `calificacion` o
+  `casilla`; los avisos de máximo y mínimo van en `textos` de cada colección
 
 ## Imágenes subidas (ImagenService)
 - `App\Services\ImagenService` es el único camino para subir imágenes

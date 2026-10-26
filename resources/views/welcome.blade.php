@@ -200,6 +200,11 @@
 </section>
 @endif
 
+{{-- OPINIONES DE PACIENTES: solo las autorizadas (pestaña "Opiniones" del panel). Sin ninguna, no se muestra --}}
+@if(!empty($testimonios))
+    @include('partials.landing-testimonios')
+@endif
+
 {{-- CERTIFICADOS --}}
 <section id="certificados" data-aparecer class="w-full bg-white py-16 md:py-24 px-6 md:px-[108px]">
 

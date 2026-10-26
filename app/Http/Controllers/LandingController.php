@@ -42,6 +42,10 @@ class LandingController extends Controller
         // $galeria son las fotos de la galería en su orden (los originales mientras no se toque)
         $galeria = $colecciones->items('galeria');
 
-        return view('welcome', compact('anuncios', 'tratamientos', 'landing', 'galeria'));
+        // Opiniones de pacientes: solo las que tienen la autorización marcada. Sin ninguna
+        // (o si la lectura falla) la sección no se muestra
+        $testimonios = array_values(array_filter($colecciones->items('testimonios'), fn ($opinion) => $opinion['autorizado'] === true));
+
+        return view('welcome', compact('anuncios', 'tratamientos', 'landing', 'galeria', 'testimonios'));
     }
 }

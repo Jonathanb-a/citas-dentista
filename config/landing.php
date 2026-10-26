@@ -116,8 +116,11 @@ return [
     ],
 
     /*
-     * Listas administrables (agregar, quitar y reordenar elementos). Cada elemento
-     * tiene una imagen y campos de texto. "originales" son los elementos que trae la
+     * Listas administrables (agregar, quitar y reordenar elementos), guardadas en
+     * landing_items (LandingColeccionService). "imagenes" dice si cada elemento lleva
+     * imagen (por defecto sí). Los campos son de tipo "texto" (por defecto),
+     * "calificacion" (1 a 5) o "casilla" (sí/no). "textos" son los avisos de máximo y
+     * mínimo (:maximo se reemplaza). "originales" son los elementos que trae la
      * landing hoy: se muestran mientras la lista no se toque y "Restaurar" los devuelve.
      * Las claves de los originales no se pueden repetir ni cambiar una vez publicadas.
      */
@@ -127,6 +130,10 @@ return [
             'minimo' => 1,
             'maximo' => 12,
             'ideal' => '900 × 900 px (cuadrada; se recorta al mostrarla).',
+            'textos' => [
+                'maximo' => 'La galería puede tener como máximo :maximo fotos. Quita alguna para agregar otra.',
+                'minimo' => 'La galería debe tener al menos una foto. Agrega otra antes de quitar esta.',
+            ],
             'campos' => [
                 'titulo' => ['etiqueta' => 'Título', 'max' => 60],
                 'subtitulo' => ['etiqueta' => 'Subtítulo', 'max' => 80],
@@ -138,6 +145,27 @@ return [
                 'galeria-4' => ['imagen' => 'img/galeria-4.png', 'titulo' => 'Implantes', 'subtitulo' => 'Solución permanente'],
                 'galeria-5' => ['imagen' => 'img/galeria-5.png', 'titulo' => 'Limpieza Dental', 'subtitulo' => 'Profunda y sin dolor'],
             ],
+        ],
+
+        // Opiniones reales de pacientes (#testimonios). Sin fotos y sin originales: la
+        // sección solo aparece si hay opiniones con la autorización marcada
+        'testimonios' => [
+            'titulo' => 'Opiniones de pacientes',
+            'imagenes' => false,
+            'minimo' => 0,
+            'maximo' => 12,
+            'textos' => [
+                'maximo' => 'Puede haber como máximo :maximo opiniones. Quita alguna para agregar otra.',
+                'minimo' => 'No se puede quitar esta opinión.',
+            ],
+            'campos' => [
+                'nombre' => ['etiqueta' => 'Nombre', 'max' => 40, 'requerido' => true,
+                    'ayuda' => 'Puede ser solo el nombre y la inicial del apellido (por ejemplo, "María G.").'],
+                'texto' => ['etiqueta' => 'Opinión', 'max' => 400, 'requerido' => true],
+                'calificacion' => ['tipo' => 'calificacion', 'etiqueta' => 'Calificación'],
+                'autorizado' => ['tipo' => 'casilla', 'etiqueta' => 'El paciente autorizó publicar esta opinión', 'obligatoria' => true],
+            ],
+            'originales' => [],
         ],
     ],
 ];

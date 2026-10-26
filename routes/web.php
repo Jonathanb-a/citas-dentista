@@ -11,6 +11,7 @@ use App\Http\Controllers\Admin\BloqueoController;
 use App\Http\Controllers\Admin\AnuncioController;
 use App\Http\Controllers\Admin\LandingContenidoController;
 use App\Http\Controllers\Admin\LandingGaleriaController;
+use App\Http\Controllers\Admin\LandingTestimoniosController;
 use App\Http\Controllers\LandingController;
 use App\Http\Controllers\Admin\CitaController as AdminCitaController;
 use App\Http\Controllers\Admin\PacienteController;
@@ -101,6 +102,14 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->grou
     Route::patch('/landing/galeria/{item}/subir', [LandingGaleriaController::class, 'subir'])->where('item', '[a-z0-9-]+')->name('landing.galeria.subir');
     Route::patch('/landing/galeria/{item}/bajar', [LandingGaleriaController::class, 'bajar'])->where('item', '[a-z0-9-]+')->name('landing.galeria.bajar');
     Route::delete('/landing/galeria/{item}/imagen', [LandingGaleriaController::class, 'restaurarImagen'])->where('item', '[a-z0-9-]+')->name('landing.galeria.restaurar-imagen');
+
+    // Landing page: opiniones de pacientes (sin fotos; solo se publican las autorizadas)
+    Route::get('/landing/opiniones', [LandingTestimoniosController::class, 'index'])->name('landing.testimonios');
+    Route::post('/landing/opiniones', [LandingTestimoniosController::class, 'agregar'])->name('landing.testimonios.agregar');
+    Route::put('/landing/opiniones/{item}', [LandingTestimoniosController::class, 'actualizar'])->where('item', '[0-9]+')->name('landing.testimonios.actualizar');
+    Route::delete('/landing/opiniones/{item}', [LandingTestimoniosController::class, 'eliminar'])->where('item', '[0-9]+')->name('landing.testimonios.eliminar');
+    Route::patch('/landing/opiniones/{item}/subir', [LandingTestimoniosController::class, 'subir'])->where('item', '[0-9]+')->name('landing.testimonios.subir');
+    Route::patch('/landing/opiniones/{item}/bajar', [LandingTestimoniosController::class, 'bajar'])->where('item', '[0-9]+')->name('landing.testimonios.bajar');
 
     // Landing page: anuncios y promociones
     Route::get('/anuncios', [AnuncioController::class, 'index'])->name('anuncios.index');
