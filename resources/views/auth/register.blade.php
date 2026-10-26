@@ -157,9 +157,9 @@
                            class="mt-0.5 h-5 w-5 shrink-0 cursor-pointer accent-[#d75078] {{ $foco }}">
                     <label for="terms" class="text-gray-500 text-xs leading-relaxed cursor-pointer">
                         Acepto los
-                        <a href="#" class="text-[#d75078] hover:underline rounded {{ $foco }}">términos y condiciones</a>
+                        <a href="#" class="text-[#c03a63] hover:underline rounded {{ $foco }}">términos y condiciones</a>
                         y el
-                        <a href="#" class="text-[#d75078] hover:underline rounded {{ $foco }}">aviso de privacidad</a>
+                        <a href="#" class="text-[#c03a63] hover:underline rounded {{ $foco }}">aviso de privacidad</a>
                     </label>
                 </div>
 
@@ -175,12 +175,12 @@
             {{-- Ya tienes cuenta --}}
             <p class="registro-entrada text-center text-sm text-gray-500" style="--retraso: 840ms">
                 ¿Ya tienes cuenta?
-                <a href="/login" class="inline-flex min-h-11 items-center px-1 font-semibold text-[#d75078] hover:underline rounded {{ $foco }}">Inicia sesión</a>
+                <a href="/login" class="inline-flex min-h-11 items-center px-1 font-semibold text-[#c03a63] hover:underline rounded {{ $foco }}">Inicia sesión</a>
             </p>
 
             {{-- Volver al inicio --}}
             <a href="/"
-               class="registro-entrada self-center inline-flex min-h-11 items-center px-2 text-xs text-gray-400 hover:text-[#d75078] transition-colors duration-300 rounded {{ $foco }}"
+               class="registro-entrada self-center inline-flex min-h-11 items-center px-2 text-xs text-gray-500 hover:text-[#c03a63] transition-colors duration-300 rounded {{ $foco }}"
                style="--retraso: 900ms">
                 ← Volver al inicio
             </a>
