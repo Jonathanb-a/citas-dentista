@@ -7,6 +7,7 @@ use App\Models\Especialidad;
 use App\Services\LandingColeccionService;
 use App\Services\LandingContenidoService;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\View;
 
 class LandingController extends Controller
 {
@@ -45,6 +46,17 @@ class LandingController extends Controller
         // Opiniones de pacientes: solo las que tienen la autorización marcada. Sin ninguna
         // (o si la lectura falla) la sección no se muestra
         $testimonios = array_values(array_filter($colecciones->items('testimonios'), fn ($opinion) => $opinion['autorizado'] === true));
+
+        // Enlaces del navbar y del pie: solo a las secciones que se muestran
+        $navegacion = array_filter([
+            '#inicio' => 'Inicio',
+            '#tratamientos' => $tratamientos->isNotEmpty() ? 'Tratamientos' : null,
+            '#nosotros' => 'Nosotros',
+            '#galeria' => $galeria !== [] ? 'Galería' : null,
+            '#testimonios' => $testimonios !== [] ? 'Opiniones' : null,
+            '#contacto' => 'Contacto',
+        ]);
+        View::share('navegacion', $navegacion);
 
         return view('welcome', compact('anuncios', 'tratamientos', 'landing', 'galeria', 'testimonios'));
     }

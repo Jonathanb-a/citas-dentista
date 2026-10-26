@@ -21,8 +21,15 @@ class LandingAparecerTest extends TestCase
 
         $html = $this->get('/')->assertOk()->getContent();
 
-        foreach (['nosotros', 'galeria', 'certificados', 'contacto'] as $seccion) {
-            $this->assertStringContainsString('<section id="' . $seccion . '" data-aparecer', $html);
+        $this->assertStringContainsString('<section id="galeria" data-aparecer', $html);
+        $this->assertStringContainsString('<article id="certificados" data-aparecer', $html);
+
+        // Nosotros, la franja para agendar y contacto animan sus bloques por separado
+        foreach (['nosotros', 'agendar', 'contacto'] as $seccion) {
+            $inicio = strpos($html, '<section id="' . $seccion . '"');
+            $this->assertNotFalse($inicio, "Falta #$seccion");
+            $bloque = substr($html, $inicio, strpos($html, '</section>', $inicio) - $inicio);
+            $this->assertStringContainsString('data-aparecer', $bloque, "#$seccion no aparece al hacer scroll");
         }
 
         $this->assertStringNotContainsString('<section id="inicio" data-aparecer', $html);

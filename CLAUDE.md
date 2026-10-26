@@ -100,6 +100,20 @@ ponerlos en el .env local y en las variables de Railway:
   referencia y una prueba lo compara. Si algún día cambias la landing a
   propósito, regenera ese archivo; si la prueba falla sin que lo
   hayas hecho, algo se coló en la landing
+- **Orden de la landing** (`welcome.blade.php` y `resources/views/partials/landing-*`):
+  hero → `#tratamientos` → carrusel `#novedades` (si hay anuncios) →
+  `#nosotros` (misión, visión y `#certificados` en bloques compactos) →
+  `#galeria` → `#testimonios` (si hay opiniones autorizadas) → `#agendar`
+  (franja final: título y texto editables `agendar.*`, botones fijos a
+  `route('paciente.citas.create')` y `/register`) → `#contacto` → pie
+- El navbar y el pie enlazan solo a secciones que se muestran:
+  `LandingController` comparte `$navegacion` (sin tratamientos ni opiniones
+  si no hay). El menú completo se ve desde `lg`; abajo, el desplegable
+  (botón con nombre, `aria-expanded`, Esc lo cierra). Las secciones del menú
+  llevan `scroll-mt` para que el navbar fijo no tape su título
+- Colores con texto en la landing: AA (4.5:1). Botones `#c03a63` con hover
+  `#a13153`, enlaces de texto `#c03a63`; `#d75078` y `#f285a2` solo en
+  fondos, íconos y bordes
 - **Tratamientos (`#tratamientos`)**: `partials/landing-tratamientos`, tras
   el hero (sustituyó a la cinta rosa fija, que anunciaba servicios que no
   estaban en el catálogo). `LandingController` pasa `$tratamientos`: las

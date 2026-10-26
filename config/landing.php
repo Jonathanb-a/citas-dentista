@@ -26,6 +26,7 @@ return [
         'hero' => ['titulo' => 'Portada', 'pestana' => 'contenido'],
         'nosotros' => ['titulo' => 'Nosotros: misión y visión', 'pestana' => 'contenido'],
         'certificados' => ['titulo' => 'Certificados', 'pestana' => 'contenido'],
+        'agendar' => ['titulo' => 'Franja final para agendar', 'pestana' => 'contenido'],
         'contacto' => ['titulo' => 'Contacto', 'pestana' => 'contacto'],
         'pie' => ['titulo' => 'Pie de página', 'pestana' => 'contacto'],
         'galeria' => ['titulo' => 'Título de la galería', 'pestana' => 'galeria'],
@@ -76,6 +77,14 @@ return [
             'tipo' => 'parrafo', 'etiqueta' => 'Texto bajo el certificado',
             'defecto' => 'Certificada por la Asociación Dental Mexicana (ADM) y Especialidad en Ortodoncia.',
             'max' => 300,
+        ],
+
+        // ---------- Franja final para agendar (botones fijos: crear cuenta y agendar) ----------
+        'agendar.titulo' => ['tipo' => 'titulo', 'etiqueta' => 'Título (hasta 2 líneas)', 'defecto' => '¿Listo para tu próxima cita?', 'max' => 80],
+        'agendar.texto' => [
+            'tipo' => 'parrafo', 'etiqueta' => 'Texto',
+            'defecto' => 'Crea tu cuenta y agenda en línea: eliges el servicio, el día y la hora que te queden mejor.',
+            'max' => 200,
         ],
 
         // ---------- Contacto ----------

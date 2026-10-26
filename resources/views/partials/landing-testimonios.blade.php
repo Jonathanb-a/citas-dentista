@@ -3,7 +3,7 @@
     la autorización marcada en el panel. Sin fotos. La landing no incluye esta sección
     si no hay ninguna.
 --}}
-<section id="testimonios" class="w-full bg-[#FFF6F6] py-16 md:py-24 px-6 md:px-[108px]" style="font-family: 'Montserrat', sans-serif;">
+<section id="testimonios" class="w-full bg-[#FFF6F6] py-16 md:py-24 px-6 md:px-[108px] scroll-mt-[82px] md:scroll-mt-[100px]" style="font-family: 'Montserrat', sans-serif;">
 
     <div data-aparecer class="text-center mb-12 md:mb-16">
         <h2 class="font-bold text-gray-800 text-3xl md:text-5xl">OPINIONES DE PACIENTES</h2>

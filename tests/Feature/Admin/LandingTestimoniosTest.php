@@ -117,14 +117,14 @@ class LandingTestimoniosTest extends TestCase
         $this->assertStringNotContainsString('Sin permiso', $seccion);
     }
 
-    public function test_la_seccion_va_despues_de_la_galeria_y_antes_de_certificados(): void
+    public function test_la_seccion_va_despues_de_la_galeria_y_antes_de_la_franja_para_agendar(): void
     {
         $this->agregar();
 
         $html = $this->get('/')->assertOk()->getContent();
 
         $this->assertLessThan(strpos($html, 'id="testimonios"'), strpos($html, 'id="galeria"'));
-        $this->assertLessThan(strpos($html, 'id="certificados"'), strpos($html, 'id="testimonios"'));
+        $this->assertLessThan(strpos($html, 'id="agendar"'), strpos($html, 'id="testimonios"'));
     }
 
     public function test_el_html_en_los_textos_se_muestra_escapado(): void
