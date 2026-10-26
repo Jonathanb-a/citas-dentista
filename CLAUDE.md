@@ -145,9 +145,9 @@ ponerlos en el .env local y en las variables de Railway:
   idéntica de nuevo
 - Esas comparaciones usan `assertTrue(a === b)` y no `assertSame`: si
   fallaran, PHPUnit tarda minutos en calcular el diff de dos páginas enteras
-- **Faltan en el repositorio 12 de las 14 imágenes originales de la landing**
-  (`mision.png`, `vision.png`, `galeria-1..5.png`, `paciente-1..5.png`,
-  `certificado.png`; solo existen `image 1.png` y el logo): hoy se ven
+- **Faltan en el repositorio 8 imágenes originales de la landing**
+  (`mision.png`, `vision.png`, `galeria-1..5.png` y `certificado.png`;
+  solo existen `image 1.png` y el logo): hoy se ven
   rotas y el panel muestra "La imagen original no está disponible". Hay
   que ponerlas en `public/img/` con esos nombres, o subirlas desde el panel
 - Los datos de contacto originales son de relleno (teléfono 999 123 1234,
@@ -171,8 +171,9 @@ ponerlos en el .env local y en las variables de Railway:
 - En la landing las fotos van a Alpine como un arreglo JavaScript escrito en
   el atributo `x-data`: los textos se escapan primero para JavaScript
   (`$js` en `welcome.blade.php`) y luego para HTML. No cambiar ese orden
-- Testimonios (`#testimonios`): siguen fijos en la vista; se harán como
-  módulo aparte con reseñas de pacientes reales
+- Testimonios: se quitaron de la landing (eran 5 tarjetas inventadas). No
+  hay tabla ni panel de reseñas; si se agregan, que sean opiniones reales
+  de pacientes, con su permiso, y que la sección no se muestre vacía
 
 ## Imágenes subidas (ImagenService)
 - `App\Services\ImagenService` es el único camino para subir imágenes

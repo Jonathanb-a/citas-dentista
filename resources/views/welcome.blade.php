@@ -182,168 +182,6 @@
 
 </section>
 
-{{-- TESTIMONIOS --}}
-<section id="testimonios" class="w-full bg-white py-16 md:py-24">
-
-    {{-- Titulo --}}
-    <h2 class="font-bold text-gray-800 text-3xl md:text-5xl text-center mb-16"
-        style="font-family: 'Montserrat', sans-serif;">
-        TESTIMONIOS
-    </h2>
-
-    {{-- Carrusel infinito --}}
-    <div class="relative overflow-hidden">
-
-        {{-- Degradado izquierda --}}
-        <div class="absolute left-0 top-0 h-full w-32 z-10 pointer-events-none"
-             style="background: linear-gradient(to right, white, transparent);"></div>
-
-        {{-- Degradado derecha --}}
-        <div class="absolute right-0 top-0 h-full w-32 z-10 pointer-events-none"
-             style="background: linear-gradient(to left, white, transparent);"></div>
-
-        {{-- Track --}}
-        <div class="flex animate-carousel gap-8 w-max">
-
-            {{-- Set 1 --}}
-
-            {{-- Card 1 --}}
-            <div class="flex-none w-[280px] md:w-[340px] flex flex-col items-center gap-3 px-4">
-                <img src="{{ asset('img/paciente-1.png') }}" alt="Maria G."
-                     class="w-28 h-28 rounded-full object-cover bg-gray-200">
-                <p class="font-bold text-[#d75078] text-base"
-                   style="font-family: 'Montserrat', sans-serif;">Maria G.</p>
-                <span class="text-yellow-400 text-xl">★★★★★</span>
-                <p class="font-light text-gray-600 text-sm leading-relaxed text-center"
-                   style="font-family: 'Montserrat', sans-serif;">
-                    Excelente atención, la doctora fue muy paciente conmigo. Tenía mucho miedo al dentista pero aquí me sentí en casa.
-                </p>
-            </div>
-
-            {{-- Card 2 --}}
-            <div class="flex-none w-[280px] md:w-[340px] flex flex-col items-center gap-3 px-4">
-                <img src="{{ asset('img/paciente-2.png') }}" alt="Laura M."
-                     class="w-28 h-28 rounded-full object-cover bg-gray-200">
-                <p class="font-bold text-[#d75078] text-base"
-                   style="font-family: 'Montserrat', sans-serif;">Laura M.</p>
-                <span class="text-yellow-400 text-xl">★★★★★</span>
-                <p class="font-light text-gray-600 text-sm leading-relaxed text-center"
-                   style="font-family: 'Montserrat', sans-serif;">
-                    Me hicieron un diseño de sonrisa increíble. El resultado superó mis expectativas, estoy muy feliz con mi cambio.
-                </p>
-            </div>
-
-            {{-- Card 3 --}}
-            <div class="flex-none w-[280px] md:w-[340px] flex flex-col items-center gap-3 px-4">
-                <img src="{{ asset('img/paciente-3.png') }}" alt="Ana R."
-                     class="w-28 h-28 rounded-full object-cover bg-gray-200">
-                <p class="font-bold text-[#d75078] text-base"
-                   style="font-family: 'Montserrat', sans-serif;">Ana R.</p>
-                <span class="text-yellow-400 text-xl">★★★★★</span>
-                <p class="font-light text-gray-600 text-sm leading-relaxed text-center"
-                   style="font-family: 'Montserrat', sans-serif;">
-                    El ambiente es muy agradable y el equipo muy profesional. Ya llevo 3 citas y siempre salgo contenta.
-                </p>
-            </div>
-
-            {{-- Card 4 --}}
-            <div class="flex-none w-[280px] md:w-[340px] flex flex-col items-center gap-3 px-4">
-                <img src="{{ asset('img/paciente-4.png') }}" alt="Sofia P."
-                     class="w-28 h-28 rounded-full object-cover bg-gray-200">
-                <p class="font-bold text-[#d75078] text-base"
-                   style="font-family: 'Montserrat', sans-serif;">Sofia P.</p>
-                <span class="text-yellow-400 text-xl">★★★★★</span>
-                <p class="font-light text-gray-600 text-sm leading-relaxed text-center"
-                   style="font-family: 'Montserrat', sans-serif;">
-                    El blanqueamiento quedó perfecto. En una sola sesión noté un cambio enorme, súper recomendada.
-                </p>
-            </div>
-
-            {{-- Card 5 --}}
-            <div class="flex-none w-[280px] md:w-[340px] flex flex-col items-center gap-3 px-4">
-                <img src="{{ asset('img/paciente-5.png') }}" alt="Carmen V."
-                     class="w-28 h-28 rounded-full object-cover bg-gray-200">
-                <p class="font-bold text-[#d75078] text-base"
-                   style="font-family: 'Montserrat', sans-serif;">Carmen V.</p>
-                <span class="text-yellow-400 text-xl">★★★★★</span>
-                <p class="font-light text-gray-600 text-sm leading-relaxed text-center"
-                   style="font-family: 'Montserrat', sans-serif;">
-                    Llevé a mis hijos y los trataron con mucha paciencia. La mejor clínica dental que he visitado.
-                </p>
-            </div>
-
-            {{-- Set 2 duplicado para loop infinito --}}
-
-            {{-- Card 1 --}}
-            <div class="flex-none w-[280px] md:w-[340px] flex flex-col items-center gap-3 px-4">
-                <img src="{{ asset('img/paciente-1.png') }}" alt="Maria G."
-                     class="w-28 h-28 rounded-full object-cover bg-gray-200">
-                <p class="font-bold text-[#d75078] text-base"
-                   style="font-family: 'Montserrat', sans-serif;">Maria G.</p>
-                <span class="text-yellow-400 text-xl">★★★★★</span>
-                <p class="font-light text-gray-600 text-sm leading-relaxed text-center"
-                   style="font-family: 'Montserrat', sans-serif;">
-                    Excelente atención, la doctora fue muy paciente conmigo. Tenía mucho miedo al dentista pero aquí me sentí en casa.
-                </p>
-            </div>
-
-            {{-- Card 2 --}}
-            <div class="flex-none w-[280px] md:w-[340px] flex flex-col items-center gap-3 px-4">
-                <img src="{{ asset('img/paciente-2.png') }}" alt="Laura M."
-                     class="w-28 h-28 rounded-full object-cover bg-gray-200">
-                <p class="font-bold text-[#d75078] text-base"
-                   style="font-family: 'Montserrat', sans-serif;">Laura M.</p>
-                <span class="text-yellow-400 text-xl">★★★★★</span>
-                <p class="font-light text-gray-600 text-sm leading-relaxed text-center"
-                   style="font-family: 'Montserrat', sans-serif;">
-                    Me hicieron un diseño de sonrisa increíble. El resultado superó mis expectativas, estoy muy feliz con mi cambio.
-                </p>
-            </div>
-
-            {{-- Card 3 --}}
-            <div class="flex-none w-[280px] md:w-[340px] flex flex-col items-center gap-3 px-4">
-                <img src="{{ asset('img/paciente-3.png') }}" alt="Ana R."
-                     class="w-28 h-28 rounded-full object-cover bg-gray-200">
-                <p class="font-bold text-[#d75078] text-base"
-                   style="font-family: 'Montserrat', sans-serif;">Ana R.</p>
-                <span class="text-yellow-400 text-xl">★★★★★</span>
-                <p class="font-light text-gray-600 text-sm leading-relaxed text-center"
-                   style="font-family: 'Montserrat', sans-serif;">
-                    El ambiente es muy agradable y el equipo muy profesional. Ya llevo 3 citas y siempre salgo contenta.
-                </p>
-            </div>
-
-            {{-- Card 4 --}}
-            <div class="flex-none w-[280px] md:w-[340px] flex flex-col items-center gap-3 px-4">
-                <img src="{{ asset('img/paciente-4.png') }}" alt="Sofia P."
-                     class="w-28 h-28 rounded-full object-cover bg-gray-200">
-                <p class="font-bold text-[#d75078] text-base"
-                   style="font-family: 'Montserrat', sans-serif;">Sofia P.</p>
-                <span class="text-yellow-400 text-xl">★★★★★</span>
-                <p class="font-light text-gray-600 text-sm leading-relaxed text-center"
-                   style="font-family: 'Montserrat', sans-serif;">
-                    El blanqueamiento quedó perfecto. En una sola sesión noté un cambio enorme, súper recomendada.
-                </p>
-            </div>
-
-            {{-- Card 5 --}}
-            <div class="flex-none w-[280px] md:w-[340px] flex flex-col items-center gap-3 px-4">
-                <img src="{{ asset('img/paciente-5.png') }}" alt="Carmen V."
-                     class="w-28 h-28 rounded-full object-cover bg-gray-200">
-                <p class="font-bold text-[#d75078] text-base"
-                   style="font-family: 'Montserrat', sans-serif;">Carmen V.</p>
-                <span class="text-yellow-400 text-xl">★★★★★</span>
-                <p class="font-light text-gray-600 text-sm leading-relaxed text-center"
-                   style="font-family: 'Montserrat', sans-serif;">
-                    Llevé a mis hijos y los trataron con mucha paciencia. La mejor clínica dental que he visitado.
-                </p>
-            </div>
-
-        </div>
-    </div>
-
-</section>
-
 {{-- CERTIFICADOS --}}
 <section id="certificados" class="w-full bg-white py-16 md:py-24 px-6 md:px-[108px]">
 
@@ -424,7 +262,7 @@
                 Agenda tu cita en línea desde nuestro portal.<br>
                 <span class="font-semibold">Rápido y sin llamadas.</span>
             </p>
-            <a href="/login"
+            <a href="{{ route('paciente.citas.create') }}"
                class="w-full text-center bg-[#d75078] text-white text-sm font-medium px-6 py-3 rounded-full hover:bg-[#f285a2] transition-all duration-300"
                style="font-family: 'Montserrat', sans-serif;">
                 Agendar mi cita
@@ -483,8 +321,6 @@
                style="font-family: 'Montserrat', sans-serif;">NOSOTROS</a>
             <a href="#galeria" class="text-gray-500 text-sm hover:text-[#d75078] transition-colors duration-300"
                style="font-family: 'Montserrat', sans-serif;">GALERÍA</a>
-            <a href="#testimonios" class="text-gray-500 text-sm hover:text-[#d75078] transition-colors duration-300"
-               style="font-family: 'Montserrat', sans-serif;">TESTIMONIOS</a>
             <a href="#certificados" class="text-gray-500 text-sm hover:text-[#d75078] transition-colors duration-300"
                style="font-family: 'Montserrat', sans-serif;">CERTIFICADOS</a>
             <a href="#contacto" class="text-gray-500 text-sm hover:text-[#d75078] transition-colors duration-300"

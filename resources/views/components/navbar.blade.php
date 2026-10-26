@@ -15,7 +15,6 @@
                 <a href="#inicio" class="text-[#2c2c2c] text-sm lg:text-base font-medium tracking-wide hover:text-[#f285a2] transition-colors duration-300">INICIO</a>
                 <a href="#nosotros" class="text-[#2c2c2c] text-sm lg:text-base font-medium tracking-wide hover:text-[#f285a2] transition-colors duration-300">NOSOTROS</a>
                 <a href="#galeria" class="text-[#2c2c2c] text-sm lg:text-base font-medium tracking-wide hover:text-[#f285a2] transition-colors duration-300">GALERÍA</a>
-                <a href="#testimonios" class="text-[#2c2c2c] text-sm lg:text-base font-medium tracking-wide hover:text-[#f285a2] transition-colors duration-300">TESTIMONIOS</a>
                 <a href="#certificados" class="text-[#2c2c2c] text-sm lg:text-base font-medium tracking-wide hover:text-[#f285a2] transition-colors duration-300">CERTIFICADOS</a>
                 <a href="#contacto" class="text-[#2c2c2c] text-sm lg:text-base font-medium tracking-wide hover:text-[#f285a2] transition-colors duration-300">CONTÁCTANOS</a>
             </div>
@@ -72,11 +71,6 @@
            @click="abierto = false"
            class="text-[#2c2c2c] text-sm font-medium py-3 border-b border-gray-100 hover:text-[#f285a2] transition-colors duration-300">
             GALERÍA
-        </a>
-        <a href="#testimonios"
-           @click="abierto = false"
-           class="text-[#2c2c2c] text-sm font-medium py-3 border-b border-gray-100 hover:text-[#f285a2] transition-colors duration-300">
-            TESTIMONIOS
         </a>
         <a href="#certificados"
            @click="abierto = false"
