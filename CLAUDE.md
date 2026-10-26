@@ -304,6 +304,14 @@ npm run dev
 php artisan migrate:fresh --seed
 
 ## Usuarios de prueba
-admin@dentissa.com / admin123
-asistente@dentissa.com / asistente123
-paciente@test.com / paciente123
+- Administrador (la doctora): lo crea `AdminSeeder` con `ADMIN_EMAIL` y
+  `ADMIN_PASSWORD` (config/admin.php). En local, sin esas variables, usa
+  admin@dentissa.com y una contraseña aleatoria que muestra en la consola al
+  sembrar; ponlas en el .env para tener siempre la misma
+- En producción las dos variables son obligatorias y la contraseña debe tener
+  al menos 12 caracteres; si no, el seeder falla sin crear nada. El primer
+  admin se crea con `php artisan db:seed --class=AdminSeeder --force` (no
+  correr `db:seed` a secas: `DatosPruebaSeeder` mete datos de demo). Si el
+  correo ya existe, el seeder no lo modifica
+- El seeder ya no crea la asistente: se da de alta en el módulo Personal
+- paciente@test.com / paciente123 (de `DatosPruebaSeeder`, solo para local)
