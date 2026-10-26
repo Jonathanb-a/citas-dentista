@@ -221,15 +221,28 @@ ponerlos en el .env local y en las variables de Railway:
      solas al desplegar). Con Nixpacks o Dockerfile hay que agregar
      `php artisan storage:link --force` al comando de pre-deploy
   4. Si al subir sale "permission denied": variable `RAILWAY_RUN_UID=0`
-  5. Límite de 5 MB por imagen: con Railpack no hay que configurar nada
-     (su php.ini trae `upload_max_filesize = 0` y `post_max_size = 0`, es
-     decir sin límite, y su Caddyfile no limita el cuerpo; revisado en el
-     repo de Railpack, verificar con una subida real). Con Nixpacks/nginx
-     o un Dockerfile propio, los valores por defecto son 2 MB (PHP) y
-     1 MB (nginx) y hay que subirlos: `upload_max_filesize=6M`,
-     `post_max_size=8M` y `client_max_body_size 6m;`. Si Railway rechaza
-     la subida con 413 es el servidor web; si Laravel dice "No se pudo
-     subir la imagen" es PHP
+  5. Límite de 5 MB por imagen: el proyecto trae su propio `php.ini` en la
+     raíz con `upload_max_filesize = 6M` (por archivo) y
+     `post_max_size = 12M` (por petición: la sección "nosotros" de la
+     landing sube 2 imágenes en un mismo formulario). También deja
+     `session.upload_progress.enabled = Off`
+     - Railpack usa ese archivo **en lugar** del suyo, no los combina: por
+       eso es una copia completa de su php.ini (railwayapp/railpack,
+       `core/providers/php/php.ini`, commit 9d1a4ea) con esos cambios. Si
+       Railpack cambia su php.ini, el proyecto no recibe esos cambios:
+       hay que copiarlos a mano conservando los tres valores de arriba
+     - Si se sube `max_kb` (config/imagenes.php) o se agregan imágenes a
+       un formulario, revisar los dos límites (el encabezado del php.ini
+       explica el cálculo)
+     - En local no se lee: Laragon/XAMPP usan su propio php.ini
+     - El Caddyfile de Railpack no limita el cuerpo. Con Nixpacks/nginx o
+       un Dockerfile propio el php.ini de la raíz no se usa: los valores
+       por defecto son 2 MB (PHP) y 1 MB (nginx) y hay que poner los
+       mismos límites (`upload_max_filesize=6M`, `post_max_size=12M`) y
+       `client_max_body_size 12m;`
+     - Si una imagen pasa de 6 MB, Laravel dice "No se pudo subir la
+       imagen" (límite de PHP); si la petición entera pasa de 12 MB,
+       PHP la descarta y Laravel responde 413
   Un Volume sirve solo a una réplica y no tiene respaldo automático. Si
   el enlace público no funciona en Railway, plan B: servir las imágenes
   desde una ruta de Laravel con caché
