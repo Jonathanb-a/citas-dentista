@@ -71,14 +71,10 @@
         </div>
     </section>
 
-    {{-- BARRA DE ANUNCIOS --}}
-<div class="w-full bg-[#d75078] py-3 overflow-hidden">
-    <div class="flex whitespace-nowrap animate-marquee">
-        <span class="text-white text-sm font-medium tracking-widest mx-8" style="font-family: 'Montserrat', sans-serif;">
-            🦷 LIMPIEZA DENTAL &nbsp;&nbsp;-------&nbsp;&nbsp; 🦷 ORTODONCIA &nbsp;&nbsp;-------&nbsp;&nbsp; 🦷 BLANQUEAMIENTO &nbsp;&nbsp;-------&nbsp;&nbsp; 🦷 IMPLANTES &nbsp;&nbsp;-------&nbsp;&nbsp; 🦷 CONSULTA GRATIS &nbsp;&nbsp;-------&nbsp;&nbsp; 🦷 LIMPIEZA DENTAL &nbsp;&nbsp;-------&nbsp;&nbsp; 🦷 ORTODONCIA &nbsp;&nbsp;-------&nbsp;&nbsp; 🦷 BLANQUEAMIENTO &nbsp;&nbsp;-------&nbsp;&nbsp; 🦷 IMPLANTES &nbsp;&nbsp;-------&nbsp;&nbsp; 🦷 CONSULTA GRATIS &nbsp;&nbsp;-------&nbsp;&nbsp;
-        </span>
-    </div>
-</div>
+    {{-- TRATAMIENTOS (sustituye a la cinta rosa fija): se oculta si no hay servicios --}}
+@if(!empty($tratamientos) && $tratamientos->isNotEmpty())
+    @include('partials.landing-tratamientos')
+@endif
 
 
 @if(!empty($anuncios) && $anuncios->isNotEmpty())

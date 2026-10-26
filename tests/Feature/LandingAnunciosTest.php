@@ -100,8 +100,6 @@ class LandingAnunciosTest extends TestCase
         $this->anuncio();
 
         $this->get('/')->assertOk()
-            ->assertSee('animate-marquee', false)
-            ->assertSee('CONSULTA GRATIS', false)
             ->assertSee('id="inicio"', false)
             ->assertSee('id="nosotros"', false)
             ->assertSee('id="galeria"', false)
@@ -111,13 +109,13 @@ class LandingAnunciosTest extends TestCase
 
     // ---------- Posición ----------
 
-    public function test_el_carrusel_va_despues_de_la_cinta_rosa_y_antes_de_nosotros(): void
+    // La cinta rosa fija se sustituyó por #tratamientos (ver LandingTratamientosTest)
+    public function test_el_carrusel_va_despues_del_hero_y_antes_de_nosotros(): void
     {
         $this->anuncio();
 
         $html = $this->get('/')->assertOk()->getContent();
 
-        $this->assertGreaterThan(strpos($html, 'animate-marquee'), strpos($html, 'data-carrusel'));
         $this->assertLessThan(strpos($html, 'id="nosotros"'), strpos($html, 'data-carrusel'));
         $this->assertLessThan(strpos($html, 'data-carrusel'), strpos($html, 'id="inicio"'));
     }

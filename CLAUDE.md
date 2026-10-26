@@ -100,11 +100,18 @@ ponerlos en el .env local y en las variables de Railway:
   referencia y una prueba lo compara. Si algún día cambias la landing a
   propósito, regenera ese archivo; si la prueba falla sin que lo
   hayas hecho, algo se coló en la landing
+- **Tratamientos (`#tratamientos`)**: `partials/landing-tratamientos`, tras
+  el hero (sustituyó a la cinta rosa fija, que anunciaba servicios que no
+  estaban en el catálogo). `LandingController` pasa `$tratamientos`: las
+  especialidades activas con sus servicios activos (los mismos que el
+  paciente puede agendar), con nombre, descripción y duración; sin precio,
+  porque el sistema no lo maneja. Se editan en el panel (Especialidades y
+  Servicios). Sin servicios activos, o si la consulta falla, la sección no
+  se muestra (no 500)
 - Avisos y promociones vigentes salen juntos en un carrusel
   (`partials/landing-carrusel`, sección `#novedades`, máx. 8 slides) tras
-  la cinta rosa de servicios y antes de `#nosotros`, en el orden del
-  panel (`anuncios.orden`, se cambia con ▲▼). La cinta rosa es texto fijo
-  de la vista, no son anuncios. Alpine: `resources/js/carrusel-anuncios.js`
+  `#tratamientos` y antes de `#nosotros`, en el orden del
+  panel (`anuncios.orden`, se cambia con ▲▼). Alpine: `resources/js/carrusel-anuncios.js`
   (avance cada 6 s, pausa con mouse/foco/toque, flechas, puntos, deslizar;
   con una sola slide no hay controles ni Alpine)
 - Vigente = activo y dentro de las fechas (extremos incluidos, ambas
