@@ -54,7 +54,7 @@
 @endif
 
 {{-- MISION Y VISION --}}
-<section id="nosotros" class="w-full bg-white py-16 md:py-24 px-6 md:px-[108px]">
+<section id="nosotros" data-aparecer class="w-full bg-white py-16 md:py-24 px-6 md:px-[108px]">
 
     {{-- MISION --}}
     <div class="flex flex-col md:flex-row items-center gap-10 md:gap-16 mb-16 md:mb-24">
@@ -102,7 +102,7 @@
 
 </section>
 {{-- TRANSFORMACIONES REALES --}}
-<section id="galeria" class="w-full bg-white py-16 md:py-24 overflow-hidden">
+<section id="galeria" data-aparecer class="w-full bg-white py-16 md:py-24 overflow-hidden">
 
     {{-- Titulo --}}
     <h2 class="font-bold text-gray-800 text-3xl md:text-5xl text-center mb-12"
@@ -183,7 +183,7 @@
 </section>
 
 {{-- CERTIFICADOS --}}
-<section id="certificados" class="w-full bg-white py-16 md:py-24 px-6 md:px-[108px]">
+<section id="certificados" data-aparecer class="w-full bg-white py-16 md:py-24 px-6 md:px-[108px]">
 
     {{-- Titulo --}}
     <h2 class="font-bold text-gray-800 text-3xl md:text-5xl text-center mb-16"
@@ -210,7 +210,7 @@
 </section>
 
 {{-- CONTACTO --}}
-<section id="contacto" class="w-full bg-white py-16 md:py-24 px-6 md:px-[108px]">
+<section id="contacto" data-aparecer class="w-full bg-white py-16 md:py-24 px-6 md:px-[108px]">
 
     {{-- Titulo --}}
     <h2 class="font-bold text-gray-800 text-2xl md:text-4xl text-center"
