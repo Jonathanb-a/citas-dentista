@@ -45,7 +45,7 @@
                     @if($imagen)
                         <img src="{{ $imagen }}" alt="{{ $anuncio->titulo }}"
                              @if($i > 0) loading="lazy" @endif decoding="async"
-                             class="w-full h-60 md:h-full md:min-h-[360px] object-cover">
+                             width="800" height="600" class="w-full h-60 md:h-full md:min-h-[360px] object-cover bg-[#fde7ed]">
                     @endif
 
                     <div class="flex flex-col gap-4 p-8 md:p-12 justify-center {{ $imagen ? 'items-start text-left' : 'items-center text-center' }}">

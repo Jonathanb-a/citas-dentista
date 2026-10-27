@@ -18,7 +18,7 @@
         {{-- Logo y ubicación --}}
         <div class="flex shrink-0 flex-col items-center gap-1 text-center lg:items-start lg:text-left xl:flex-row xl:items-center xl:gap-3">
             <img src="{{ asset('img/logo-dentista.png') }}" loading="lazy" decoding="async"
-                 alt="Melissa López N." class="h-14 w-auto object-contain">
+                 width="500" height="415" alt="Melissa López N." class="h-14 w-auto object-contain">
             <p class="text-gray-600 text-xs">{{ $landing->texto('pie.ubicacion') }}</p>
         </div>
 

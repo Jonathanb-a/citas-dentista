@@ -16,7 +16,7 @@
         ] as [$titulo, $imagen, $texto, $retraso])
             <article data-aparecer style="--retraso: {{ $retraso }}ms" class="flex flex-col overflow-hidden rounded-2xl bg-white shadow-sm">
                 <img src="{{ $landing->imagen($imagen) }}" loading="lazy" decoding="async" alt="{{ $titulo }}"
-                     class="h-48 w-full object-cover bg-[#fde7ed]">
+                     width="550" height="192" class="h-48 w-full object-cover bg-[#fde7ed]">
                 <div class="flex flex-col gap-2 p-6">
                     <h3 class="font-bold text-[#c03a63] text-xl">{{ $titulo }}</h3>
                     <p class="text-gray-600 text-sm md:text-base leading-relaxed">{{ $landing->texto($texto) }}</p>
@@ -28,7 +28,7 @@
     {{-- Certificados: mismo bloque, en horizontal --}}
     <article id="certificados" data-aparecer class="mx-auto mt-6 flex max-w-[1100px] flex-col items-center gap-6 rounded-2xl bg-white p-6 shadow-sm sm:flex-row scroll-mt-[100px] md:scroll-mt-[120px]">
         <img src="{{ $landing->imagen('certificados.imagen') }}" loading="lazy" decoding="async" alt="Certificado"
-             class="w-40 shrink-0 object-contain">
+             width="160" height="120" class="h-[120px] w-40 shrink-0 object-contain">
         <div class="flex flex-col gap-2 text-center sm:text-left">
             <h3 class="font-bold text-[#c03a63] text-xl">Certificados</h3>
             <p class="text-gray-600 text-sm md:text-base leading-relaxed">{{ $landing->texto('certificados.texto') }}</p>

@@ -27,6 +27,7 @@
             <a href="#inicio" class="rounded-lg focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#a13153]">
                 <img src="{{ asset('img/logo-dentista.png') }}"
                      alt="Melissa López N."
+                     width="500" height="415"
                      class="h-16 md:h-[110px] w-auto object-contain">
             </a>
 

@@ -42,16 +42,20 @@
 
             </div>
 
-            {{-- Imagen derecha: la de hero.imagen; si no carga, la ilustración del diente --}}
-            <div class="registro-entrada-lateral w-full md:w-1/2 flex justify-center items-center" style="--retraso: 300ms"
+            {{-- Imagen derecha: la de hero.imagen; si no carga, la ilustración del diente.
+                 Es lo primero que pinta la página: prioridad alta, sin retraso en la entrada,
+                 caja con medidas fijas (no empuja el contenido) y fondo rosa mientras llega --}}
+            <div class="registro-entrada w-full md:w-1/2 flex justify-center items-center" style="--retraso: 0ms"
                  x-data="{ rota: false }"
                  x-init="$nextTick(() => { rota = $refs.imagen.complete && $refs.imagen.naturalWidth === 0 })">
                 <img src="{{ $landing->imagen('hero.imagen') }}"
                      alt="Dentista"
+                     width="579" height="423"
+                     fetchpriority="high"
                      x-ref="imagen"
                      x-show="!rota"
                      x-on:error="rota = true"
-                     class="w-full max-w-[579px] aspect-[579/423] object-cover rounded-3xl shadow-lg">
+                     class="w-full max-w-[579px] h-auto aspect-[579/423] object-cover rounded-3xl shadow-lg bg-[#fde7ed]">
                 <div x-show="rota" style="display: none" class="w-full max-w-[420px]">
                     <svg class="hero-flotar w-full h-auto" viewBox="0 0 240 240" aria-hidden="true">
                         <defs>
@@ -111,7 +115,7 @@
                             class="group block w-full text-left rounded-3xl {{ $focoGaleria }}">
                         <span class="block overflow-hidden rounded-3xl shadow-sm">
                             <img src="{{ $foto['src'] }}" alt="{{ $foto['titulo'] }}" loading="lazy" decoding="async"
-                                 class="w-full h-[300px] md:h-[340px] object-cover motion-safe:transition-transform motion-safe:duration-500 motion-safe:group-hover:scale-105">
+                                 width="350" height="340" class="w-full h-[300px] md:h-[340px] object-cover bg-[#fde7ed] motion-safe:transition-transform motion-safe:duration-500 motion-safe:group-hover:scale-105">
                         </span>
                         <span class="block px-2 pt-3">
                             <span class="block font-bold text-gray-800 text-base">{{ $foto['titulo'] }}</span>

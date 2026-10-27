@@ -86,4 +86,29 @@ class LandingHeroTest extends TestCase
         // La ilustración empieza oculta: solo aparece si la imagen no carga
         $this->assertMatchesRegularExpression('/x-show="rota" style="display: none"[^>]*>\s*<svg class="hero-flotar/', $hero);
     }
+
+    public function test_la_imagen_del_hero_carga_primero_sin_mover_el_contenido(): void
+    {
+        $hero = $this->hero();
+        preg_match('/<img[^>]*x-ref="imagen"[^>]*>/', $hero, $img);
+        $this->assertNotEmpty($img);
+
+        $this->assertStringContainsString('fetchpriority="high"', $img[0]);
+        $this->assertStringContainsString('width="579" height="423"', $img[0]);
+        $this->assertStringContainsString('aspect-[579/423]', $img[0]);
+        $this->assertStringContainsString('bg-[#fde7ed]', $img[0]); // fondo mientras llega
+        $this->assertStringNotContainsString('loading="lazy"', $img[0]);
+    }
+
+    public function test_el_hero_entra_con_fade_up_que_respeta_reducir_movimiento(): void
+    {
+        $hero = $this->hero();
+        $this->assertSame(5, substr_count($hero, 'class="registro-entrada '));
+        $this->assertStringNotContainsString('registro-entrada-lateral', $hero);
+
+        // La animación solo existe dentro de prefers-reduced-motion: no-preference
+        $css = preg_replace('/\s+/', ' ', file_get_contents(resource_path('css/app.css')));
+        $this->assertMatchesRegularExpression('/@media \(prefers-reduced-motion: no-preference\) \{ \.registro-entrada \{ animation: registro-entrada/', $css);
+        $this->assertSame(1, preg_match_all('/\.registro-entrada \{/', $css));
+    }
 }

@@ -172,4 +172,21 @@ class LandingEstructuraTest extends TestCase
         $this->assertStringContainsString('this.abierto = false;', $html);
         $this->assertStringContainsString('scrollIntoView', $html);
     }
+
+    public function test_ninguna_imagen_mueve_el_contenido_al_cargar(): void
+    {
+        $this->conTratamientosYOpiniones();
+        \App\Models\Anuncio::create(['titulo' => 'Aviso', 'tipo' => 'aviso', 'activo' => true, 'color' => 'rosa', 'orden' => 1, 'imagen' => 'anuncios/aviso.png']);
+
+        $html = $this->get('/')->assertOk()->getContent();
+        preg_match_all('/<img\s[^>]*>/', $html, $imagenes);
+        $this->assertGreaterThanOrEqual(10, count($imagenes[0]));
+
+        foreach ($imagenes[0] as $img) {
+            if (str_contains($img, ':src=')) {
+                continue; // la del lightbox: va en una capa fija, no empuja la página
+            }
+            $this->assertMatchesRegularExpression('/ width="\d+" height="\d+"/', $img, "Imagen sin medidas: $img");
+        }
+    }
 }
