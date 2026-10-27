@@ -120,18 +120,56 @@ class LandingEstructuraTest extends TestCase
         }
     }
 
-    public function test_cada_enlace_del_menu_y_del_pie_tiene_su_seccion(): void
+    public function test_ningun_enlace_interno_de_la_landing_queda_roto(): void
     {
+        // Navbar, hero, secciones, franja para agendar y pie; sin datos y con datos
         foreach ([false, true] as $conDatos) {
             if ($conDatos) {
                 $this->conTratamientosYOpiniones();
             }
 
             $html = $this->get('/')->assertOk()->getContent();
+            $anclas = $this->anclas($html);
+            $this->assertNotEmpty($anclas);
 
-            foreach (array_merge($this->anclas($this->navbar($html)), $this->anclas($this->pie($html))) as $ancla) {
+            foreach ($anclas as $ancla) {
                 $this->assertMatchesRegularExpression('/ id="' . substr($ancla, 1) . '"/', $html, "$ancla no lleva a ninguna sección");
             }
         }
+    }
+
+    public function test_cada_seccion_tiene_margen_para_el_navbar_fijo(): void
+    {
+        $this->conTratamientosYOpiniones();
+        \App\Models\Anuncio::create(['titulo' => 'Aviso', 'tipo' => 'aviso', 'activo' => true, 'color' => 'rosa', 'orden' => 1]);
+
+        $html = $this->get('/')->assertOk()->getContent();
+        preg_match_all('/<section id="([a-z]+)"[^>]*class="([^"]*)"/', $html, $secciones, PREG_SET_ORDER);
+
+        $this->assertCount(8, $secciones); // inicio, tratamientos, novedades, nosotros, galeria, testimonios, agendar, contacto
+        foreach ($secciones as [, $id, $clases]) {
+            $this->assertStringContainsString('scroll-mt-[82px] md:scroll-mt-[100px]', $clases, "#$id no tiene scroll-mt");
+        }
+    }
+
+    public function test_el_desplazamiento_suave_respeta_reducir_movimiento(): void
+    {
+        $css = preg_replace('/\s+/', ' ', file_get_contents(resource_path('css/app.css')));
+
+        $this->assertMatchesRegularExpression('/@media \(prefers-reduced-motion: no-preference\) \{ html \{ scroll-behavior: smooth; \} \}/', $css);
+        $this->assertSame(1, substr_count($css, 'scroll-behavior'), 'scroll-behavior solo dentro del @media');
+    }
+
+    public function test_el_menu_movil_se_cierra_y_despues_se_desplaza(): void
+    {
+        $html = $this->get('/')->assertOk()->getContent();
+        $menu = substr($html, strpos($html, 'id="menu-movil"'));
+        $menu = substr($menu, 0, strpos($menu, '</div>'));
+
+        foreach ($this->anclas($menu) as $ancla) {
+            $this->assertStringContainsString("@click.prevent=\"irA('$ancla')\"", $menu);
+        }
+        $this->assertStringContainsString('this.abierto = false;', $html);
+        $this->assertStringContainsString('scrollIntoView', $html);
     }
 }

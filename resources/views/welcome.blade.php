@@ -5,7 +5,7 @@
         $focoHero = 'focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#a13153]';
         $botonHero = 'inline-flex min-h-11 items-center justify-center gap-2 rounded-2xl bg-[#c03a63] px-7 py-3.5 text-sm md:text-base font-semibold text-white hover:bg-[#a13153] transition-[background-color] duration-300 ' . $focoHero;
     @endphp
-    <section id="inicio" class="w-full min-h-[600px] md:min-h-[719px] bg-linear-to-br from-[#FFF6F6] to-[#fde7ed] flex items-center px-6 md:px-[108px] py-16">
+    <section id="inicio" class="w-full min-h-[600px] md:min-h-[719px] bg-linear-to-br from-[#FFF6F6] to-[#fde7ed] flex items-center px-6 md:px-[108px] py-16 scroll-mt-[82px] md:scroll-mt-[100px]">
         <div class="w-full flex flex-col md:flex-row items-center gap-12 md:gap-16">
 
             {{-- Contenido izquierda --}}
@@ -31,10 +31,13 @@
                     <a href="{{ route('paciente.citas.create') }}" class="{{ $botonHero }}">
                         {{ $landing->texto('hero.boton') }}
                     </a>
-                    <a href="#tratamientos" class="{{ $botonHero }}">
-                        Ver tratamientos
-                        <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M19 12l-7 7-7-7"/></svg>
-                    </a>
+                    {{-- Solo si se muestra #tratamientos (hay servicios activos): si no, sería un enlace roto --}}
+                    @if(!empty($tratamientos) && $tratamientos->isNotEmpty())
+                        <a href="#tratamientos" class="{{ $botonHero }}">
+                            Ver tratamientos
+                            <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M19 12l-7 7-7-7"/></svg>
+                        </a>
+                    @endif
                 </div>
 
             </div>

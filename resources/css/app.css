@@ -77,3 +77,12 @@
         animation-delay: var(--retraso, 0ms);
     }
 }
+
+/* Enlaces internos de la landing (#seccion): desplazamiento suave, salvo con
+   "reducir movimiento". Cada sección lleva scroll-mt para que el navbar fijo no
+   tape su título al llegar */
+@media (prefers-reduced-motion: no-preference) {
+    html {
+        scroll-behavior: smooth;
+    }
+}

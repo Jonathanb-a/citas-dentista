@@ -5,7 +5,7 @@
     $foco = 'focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#a13153]';
     $control = 'flex h-11 w-11 items-center justify-center rounded-full border border-[#fbd3df] bg-white text-gray-700 hover:border-[#c03a63] hover:text-[#c03a63] transition-[border-color,color] duration-300 ' . $foco;
 @endphp
-<section id="novedades" data-carrusel class="w-full bg-[#FFF6F6] py-16 md:py-24 px-6 md:px-[108px]"
+<section id="novedades" data-carrusel class="w-full bg-[#FFF6F6] py-16 md:py-24 px-6 md:px-[108px] scroll-mt-[82px] md:scroll-mt-[100px]"
          aria-roledescription="carrusel" aria-label="Novedades y promociones" style="font-family: 'Montserrat', sans-serif;">
 
     {{-- Titulo --}}

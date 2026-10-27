@@ -2,7 +2,23 @@
 @php
     $enlacesMenu = $navegacion ?? ['#inicio' => 'Inicio', '#nosotros' => 'Nosotros', '#contacto' => 'Contacto'];
 @endphp
-<div x-data="{ abierto: false }" @keydown.escape.window="if (abierto) { abierto = false; $refs.botonMenu.focus() }">
+{{-- irA: el menú móvil se cierra primero y después se desplaza a la sección (con scroll-mt y,
+     salvo "reducir movimiento", suave). El foco pasa a la sección, como con un enlace normal --}}
+<div x-data="{
+        abierto: false,
+        irA(ancla) {
+            const destino = document.querySelector(ancla);
+            this.abierto = false;
+            if (!destino) return;
+            const reducir = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+            setTimeout(() => {
+                destino.scrollIntoView({ behavior: reducir ? 'auto' : 'smooth' });
+                history.pushState(null, '', ancla);
+                if (!destino.hasAttribute('tabindex')) destino.setAttribute('tabindex', '-1');
+                destino.focus({ preventScroll: true });
+            }, reducir ? 0 : 200);
+        }
+     }" @keydown.escape.window="if (abierto) { abierto = false; $refs.botonMenu.focus() }">
 
     <nav class="w-full bg-white fixed top-0 left-0 z-50 shadow-sm">
         <div class="flex items-center justify-between px-6 md:px-16 h-[82px] md:h-[100px]">
@@ -63,7 +79,7 @@
 
         @foreach($enlacesMenu as $ancla => $titulo)
             <a href="{{ $ancla }}"
-               @click="abierto = false"
+               @click.prevent="irA('{{ $ancla }}')"
                class="flex min-h-11 items-center uppercase text-[#2c2c2c] text-sm font-medium py-3 border-b border-gray-100 hover:text-[#c03a63] transition-colors duration-300 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#a13153]">
                 {{ $titulo }}
             </a>

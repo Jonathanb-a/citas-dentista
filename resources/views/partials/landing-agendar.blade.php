@@ -6,7 +6,7 @@
 @php
     $focoAgendar = 'focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#a13153]';
 @endphp
-<section id="agendar" class="w-full px-6 md:px-[108px] py-16 md:py-20" style="font-family: 'Montserrat', sans-serif;">
+<section id="agendar" class="w-full px-6 md:px-[108px] py-16 md:py-20 scroll-mt-[82px] md:scroll-mt-[100px]" style="font-family: 'Montserrat', sans-serif;">
     <div data-aparecer class="mx-auto flex max-w-[1100px] flex-col items-center gap-6 rounded-3xl bg-linear-to-br from-[#fde7ed] to-[#fbd3df] px-6 py-12 text-center md:px-16">
         <h2 class="font-extrabold text-gray-800 text-3xl md:text-5xl leading-tight tracking-tight">
             {{ $landing->titulo('agendar.titulo') }}
