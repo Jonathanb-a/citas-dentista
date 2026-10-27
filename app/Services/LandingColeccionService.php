@@ -9,7 +9,12 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 
 /**
- * Listas administrables de la landing (hoy: la galería). Ver "colecciones" en config/landing.php.
+ * Listas administrables de la landing (la galería y las opiniones de pacientes). Ver
+ * "colecciones" en config/landing.php.
+ *
+ * Cada lista define si sus elementos llevan imagen ("imagenes", por defecto sí) y sus
+ * campos: "texto" (por defecto, texto plano en una línea), "calificacion" (entero de 1 a 5)
+ * o "casilla" (sí/no; con "obligatoria" hay que marcarla para guardar).
  *
  * Mientras una lista no tenga filas en landing_items se muestran sus elementos originales,
  * de modo que la landing no cambia hasta que alguien edite algo. El primer cambio guarda
@@ -46,6 +51,26 @@ class LandingColeccionService
     public static function existe(string $coleccion): bool
     {
         return config("landing.colecciones.$coleccion") !== null;
+    }
+
+    public static function usaImagenes(string $coleccion): bool
+    {
+        return self::definicion($coleccion)['imagenes'] ?? true;
+    }
+
+    private static function tipoDeCampo(array $definicionCampo): string
+    {
+        return $definicionCampo['tipo'] ?? 'texto';
+    }
+
+    // Valor de un campo con su tipo: texto (string), calificacion (int) o casilla (bool)
+    private static function valorDeCampo(array $definicionCampo, mixed $valor): string|int|bool
+    {
+        return match (self::tipoDeCampo($definicionCampo)) {
+            'calificacion' => (int) $valor,
+            'casilla' => filter_var($valor, FILTER_VALIDATE_BOOLEAN),
+            default => self::normalizarTexto(is_scalar($valor) ? (string) $valor : ''),
+        };
     }
 
     // ---------- Lectura ----------
@@ -105,8 +130,8 @@ class LandingColeccionService
                 'es_original' => true,
             ];
 
-            foreach (array_keys($definicion['campos']) as $campo) {
-                $item[$campo] = (string) ($original[$campo] ?? '');
+            foreach ($definicion['campos'] as $campo => $definicionCampo) {
+                $item[$campo] = self::valorDeCampo($definicionCampo, $original[$campo] ?? '');
             }
 
             $items[] = $item;
@@ -131,8 +156,8 @@ class LandingColeccionService
             'es_original' => false,
         ];
 
-        foreach (array_keys($definicion['campos']) as $campo) {
-            $item[$campo] = (string) ($fila->datos[$campo] ?? '');
+        foreach ($definicion['campos'] as $campo => $definicionCampo) {
+            $item[$campo] = self::valorDeCampo($definicionCampo, $fila->datos[$campo] ?? '');
         }
 
         return $item;
@@ -142,10 +167,14 @@ class LandingColeccionService
 
     public static function reglas(string $coleccion, bool $imagenObligatoria): array
     {
-        $reglas = ['imagen' => ImagenService::reglas(null, $imagenObligatoria)];
+        $reglas = self::usaImagenes($coleccion) ? ['imagen' => ImagenService::reglas(null, $imagenObligatoria)] : [];
 
         foreach (self::definicion($coleccion)['campos'] as $campo => $definicion) {
-            $reglas[$campo] = ['nullable', 'string', 'max:' . $definicion['max']];
+            $reglas[$campo] = match (self::tipoDeCampo($definicion)) {
+                'calificacion' => ['required', 'integer', 'between:1,5'],
+                'casilla' => ($definicion['obligatoria'] ?? false) ? ['accepted'] : ['nullable', 'boolean'],
+                default => [($definicion['requerido'] ?? false) ? 'required' : 'nullable', 'string', 'max:' . $definicion['max']],
+            };
         }
 
         return $reglas;
@@ -153,10 +182,23 @@ class LandingColeccionService
 
     public static function mensajes(string $coleccion): array
     {
-        $mensajes = ImagenService::mensajes() + ['imagen.required' => 'Elige una imagen.'];
+        $mensajes = self::usaImagenes($coleccion) ? ImagenService::mensajes() + ['imagen.required' => 'Elige una imagen.'] : [];
 
         foreach (self::definicion($coleccion)['campos'] as $campo => $definicion) {
-            $mensajes["$campo.max"] = "El campo \"{$definicion['etiqueta']}\" es demasiado largo (máximo {$definicion['max']} caracteres).";
+            $etiqueta = $definicion['etiqueta'];
+
+            match (self::tipoDeCampo($definicion)) {
+                'calificacion' => $mensajes += [
+                    "$campo.required" => "Elige la calificación (de 1 a 5).",
+                    "$campo.integer" => "La calificación debe ser un número de 1 a 5.",
+                    "$campo.between" => "La calificación debe ser de 1 a 5.",
+                ],
+                'casilla' => $mensajes += ["$campo.accepted" => "Marca la casilla \"$etiqueta\" para poder guardar."],
+                default => $mensajes += [
+                    "$campo.required" => "Escribe el campo \"$etiqueta\".",
+                    "$campo.max" => "El campo \"$etiqueta\" es demasiado largo (máximo {$definicion['max']} caracteres).",
+                ],
+            };
         }
 
         return $mensajes;
@@ -170,18 +212,23 @@ class LandingColeccionService
 
     // ---------- Escritura ----------
 
-    /** Agrega un elemento al final. $datos: campos de texto. */
-    public function agregar(string $coleccion, UploadedFile $imagen, array $datos): LandingItem
+    /** Agrega un elemento al final. $datos: los campos; $imagen solo en listas con imágenes. */
+    public function agregar(string $coleccion, ?UploadedFile $imagen, array $datos): LandingItem
     {
         $definicion = self::definicion($coleccion);
-        $ruta = $this->imagenes->guardar($imagen, self::CARPETA_IMAGENES);
+
+        if (self::usaImagenes($coleccion) && $imagen === null) {
+            throw new \InvalidArgumentException("La lista $coleccion necesita una imagen.");
+        }
+
+        $ruta = self::usaImagenes($coleccion) ? $this->imagenes->guardar($imagen, self::CARPETA_IMAGENES) : null;
 
         try {
             return DB::transaction(function () use ($coleccion, $definicion, $ruta, $datos) {
                 $this->materializar($coleccion);
 
                 if (LandingItem::where('coleccion', $coleccion)->count() >= $definicion['maximo']) {
-                    throw new \DomainException("La galería puede tener como máximo {$definicion['maximo']} fotos. Quita alguna para agregar otra.");
+                    throw new \DomainException(str_replace(':maximo', $definicion['maximo'], $definicion['textos']['maximo']));
                 }
 
                 return LandingItem::create([
@@ -203,7 +250,7 @@ class LandingColeccionService
     /** Cambia los textos y, si llega una imagen, la reemplaza (la anterior se borra). */
     public function actualizar(string $coleccion, string $ref, array $datos, ?UploadedFile $imagen = null): void
     {
-        $rutaNueva = $imagen ? $this->imagenes->guardar($imagen, self::CARPETA_IMAGENES) : null;
+        $rutaNueva = ($imagen && self::usaImagenes($coleccion)) ? $this->imagenes->guardar($imagen, self::CARPETA_IMAGENES) : null;
         $rutaABorrar = null;
 
         try {
@@ -239,7 +286,7 @@ class LandingColeccionService
                 $fila = $this->fila($coleccion, $ref);
 
                 if (LandingItem::where('coleccion', $coleccion)->count() <= $definicion['minimo']) {
-                    throw new \DomainException('La galería debe tener al menos una foto. Agrega otra antes de quitar esta.');
+                    throw new \DomainException($definicion['textos']['minimo']);
                 }
 
                 $ruta = $fila->imagen;
@@ -356,8 +403,8 @@ class LandingColeccionService
     {
         $campos = [];
 
-        foreach (array_keys(self::definicion($coleccion)['campos']) as $campo) {
-            $campos[$campo] = self::normalizarTexto($datos[$campo] ?? '');
+        foreach (self::definicion($coleccion)['campos'] as $campo => $definicionCampo) {
+            $campos[$campo] = self::valorDeCampo($definicionCampo, $datos[$campo] ?? '');
         }
 
         return $campos;

@@ -134,7 +134,7 @@ class DatosPruebaSeeder extends Seeder
         ]);
 
         // Odontograma de ejemplo, coherente con su diagnóstico
-        $doctora = User::where('email', 'admin@dentissa.com')->first();
+        $doctora = User::where('role', 'admin')->orderBy('id')->first();
 
         foreach ([
             36 => ['estado' => 'caries', 'nota' => 'Cara oclusal. Pendiente resina.'],

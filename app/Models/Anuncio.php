@@ -24,11 +24,11 @@ class Anuncio extends Model
         'rosa' => [
             'nombre' => 'Rosa',
             'muestra' => 'bg-[#d75078]',
-            'franja' => 'bg-[#fde7ed] text-[#d75078]',
+            'franja' => 'bg-[#fde7ed] text-[#a13153]', // 5.79:1
             'circulo' => 'bg-[#fde7ed]',
             'borde' => 'border-[#fde7ed]',
             'acento' => 'text-[#d75078]',
-            'boton' => 'bg-[#d75078] hover:bg-[#f285a2]',
+            'boton' => 'bg-[#c03a63] hover:bg-[#a13153]', // texto blanco: 5.22:1 y 6.82:1
         ],
         'verde' => [
             'nombre' => 'Verde',

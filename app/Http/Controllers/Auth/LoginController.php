@@ -44,16 +44,40 @@ class LoginController extends Controller
 
             $request->session()->regenerate();
 
-            return match (Auth::user()->role) {
-                'admin'     => redirect()->route('admin.dashboard'),
-                'asistente' => redirect()->route('asistente.dashboard'),
-                default     => redirect()->route('paciente.dashboard'),
-            };
+            $rol = Auth::user()->role;
+            $this->descartarDestinoDeOtroRol($request, $rol);
+
+            // Si venía de una página protegida (p. ej. agendar cita), vuelve ahí; si no, a su panel
+            return redirect()->intended(match ($rol) {
+                'admin'     => route('admin.dashboard'),
+                'asistente' => route('asistente.dashboard'),
+                default     => route('paciente.dashboard'),
+            });
         }
 
         return back()->withErrors([
             'identificador' => 'Los datos no coinciden con nuestros registros.',
         ])->onlyInput('identificador');
+    }
+
+    // Un destino guardado del área de otro rol (un admin que tocó "Agendar mi cita" sin
+    // sesión) terminaría en un 403: se descarta y entra a su propio panel
+    private function descartarDestinoDeOtroRol(Request $request, string $rol): void
+    {
+        $destino = $request->session()->get('url.intended');
+
+        if (!$destino) {
+            return;
+        }
+
+        $ruta = '/' . ltrim((string) parse_url($destino, PHP_URL_PATH), '/');
+
+        foreach (['admin', 'asistente', 'paciente'] as $area) {
+            if ($area !== $rol && ($ruta === "/$area" || str_starts_with($ruta, "/$area/"))) {
+                $request->session()->forget('url.intended');
+                return;
+            }
+        }
     }
 
     public function logout(Request $request)

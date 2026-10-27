@@ -3,9 +3,11 @@
 namespace App\Http\Controllers;
 
 use App\Models\Anuncio;
+use App\Models\Especialidad;
 use App\Services\LandingColeccionService;
 use App\Services\LandingContenidoService;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\View;
 
 class LandingController extends Controller
 {
@@ -23,10 +25,39 @@ class LandingController extends Controller
             Log::warning('Landing: no se pudieron cargar los anuncios: ' . $e->getMessage());
         }
 
+        // Tratamientos: los servicios activos agrupados por especialidad activa (los mismos
+        // que el paciente puede agendar). Si la consulta falla, la sección no se muestra
+        $tratamientos = collect();
+
+        try {
+            $tratamientos = Especialidad::where('activo', true)
+                ->whereHas('servicios', fn ($q) => $q->where('activo', true))
+                ->with(['servicios' => fn ($q) => $q->where('activo', true)->orderBy('nombre')])
+                ->orderBy('nombre')
+                ->get();
+        } catch (\Throwable $e) {
+            Log::warning('Landing: no se pudieron cargar los tratamientos: ' . $e->getMessage());
+        }
+
         // $landing entrega cada imagen y texto: el personalizado o, si no hay, el original.
         // $galeria son las fotos de la galería en su orden (los originales mientras no se toque)
         $galeria = $colecciones->items('galeria');
 
-        return view('welcome', compact('anuncios', 'landing', 'galeria'));
+        // Opiniones de pacientes: solo las que tienen la autorización marcada. Sin ninguna
+        // (o si la lectura falla) la sección no se muestra
+        $testimonios = array_values(array_filter($colecciones->items('testimonios'), fn ($opinion) => $opinion['autorizado'] === true));
+
+        // Enlaces del navbar y del pie: solo a las secciones que se muestran
+        $navegacion = array_filter([
+            '#inicio' => 'Inicio',
+            '#tratamientos' => $tratamientos->isNotEmpty() ? 'Tratamientos' : null,
+            '#nosotros' => 'Nosotros',
+            '#galeria' => $galeria !== [] ? 'Galería' : null,
+            '#testimonios' => $testimonios !== [] ? 'Opiniones' : null,
+            '#contacto' => 'Contacto',
+        ]);
+        View::share('navegacion', $navegacion);
+
+        return view('welcome', compact('anuncios', 'tratamientos', 'landing', 'galeria', 'testimonios'));
     }
 }

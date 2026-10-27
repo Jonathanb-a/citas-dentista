@@ -40,6 +40,38 @@ class RegistroTest extends TestCase
             ->assertSee('Femenino');
     }
 
+    public function test_formulario_conserva_campos_ruta_y_etiquetas(): void
+    {
+        $respuesta = $this->get(route('register'))->assertOk();
+
+        $respuesta->assertSee('action="/register"', false)
+            ->assertSee('name="_token"', false);
+
+        foreach (['name', 'apellidos', 'email', 'telefono', 'password', 'password_confirmation', 'terms'] as $campo) {
+            $respuesta->assertSee('name="' . $campo . '"', false)
+                ->assertSee('for="' . $campo . '"', false)
+                ->assertSee('id="' . $campo . '"', false);
+        }
+
+        // Sin login con Google ni testimonios inventados
+        $respuesta->assertDontSee('Google')->assertDontSee('testimonio', false);
+    }
+
+    public function test_tras_un_error_conserva_lo_escrito_y_muestra_el_mensaje(): void
+    {
+        $this->from(route('register'))
+            ->followingRedirects()
+            ->post('/register', $this->datos(['email' => 'no-es-correo', 'password_confirmation' => 'otra']))
+            ->assertOk()
+            ->assertSee('value="Lucía"', false)
+            ->assertSee('value="Hernández"', false)
+            ->assertSee('value="no-es-correo"', false)
+            ->assertSee('Ingresa un correo válido.')
+            ->assertSee('Las contraseñas no coinciden.')
+            ->assertSee('aria-invalid="true"', false)
+            ->assertDontSee('value="secreta123"', false);
+    }
+
     public function test_registro_exige_sexo_valido(): void
     {
         $this->post('/register', $this->datos(['sexo' => null]))

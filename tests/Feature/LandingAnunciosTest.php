@@ -100,8 +100,6 @@ class LandingAnunciosTest extends TestCase
         $this->anuncio();
 
         $this->get('/')->assertOk()
-            ->assertSee('animate-marquee', false)
-            ->assertSee('CONSULTA GRATIS', false)
             ->assertSee('id="inicio"', false)
             ->assertSee('id="nosotros"', false)
             ->assertSee('id="galeria"', false)
@@ -111,13 +109,13 @@ class LandingAnunciosTest extends TestCase
 
     // ---------- Posición ----------
 
-    public function test_el_carrusel_va_despues_de_la_cinta_rosa_y_antes_de_nosotros(): void
+    // La cinta rosa fija se sustituyó por #tratamientos (ver LandingTratamientosTest)
+    public function test_el_carrusel_va_despues_del_hero_y_antes_de_nosotros(): void
     {
         $this->anuncio();
 
         $html = $this->get('/')->assertOk()->getContent();
 
-        $this->assertGreaterThan(strpos($html, 'animate-marquee'), strpos($html, 'data-carrusel'));
         $this->assertLessThan(strpos($html, 'id="nosotros"'), strpos($html, 'data-carrusel'));
         $this->assertLessThan(strpos($html, 'data-carrusel'), strpos($html, 'id="inicio"'));
     }
@@ -158,6 +156,29 @@ class LandingAnunciosTest extends TestCase
         $this->assertStringContainsString('@mouseleave="pausado = false"', $carrusel);
         $this->assertStringContainsString('@touchstart.passive="empezarToque($event)"', $carrusel);
         $this->assertStringContainsString('@touchend="terminarToque($event)"', $carrusel);
+    }
+
+    public function test_con_varias_slides_se_maneja_con_teclado_y_se_puede_pausar(): void
+    {
+        $this->anuncio(['titulo' => 'Uno']);
+        $this->anuncio(['titulo' => 'Dos']);
+
+        $carrusel = $this->carrusel($this->get('/')->assertOk()->getContent());
+
+        $this->assertStringContainsString('@keydown.arrow-left.prevent="anterior()"', $carrusel);
+        $this->assertStringContainsString('@keydown.arrow-right.prevent="siguiente()"', $carrusel);
+        $this->assertStringContainsString('@click="alternarPausa()"', $carrusel);
+        $this->assertStringContainsString("'Pausar el avance automático'", $carrusel);
+        $this->assertStringContainsString(':aria-live=', $carrusel);
+        // Flechas, puntos y pausa con área táctil de 44 px
+        $this->assertGreaterThanOrEqual(5, substr_count($carrusel, 'h-11'));
+    }
+
+    public function test_con_una_sola_slide_no_hay_boton_de_pausa(): void
+    {
+        $this->anuncio(['titulo' => 'Única']);
+
+        $this->assertStringNotContainsString('alternarPausa', $this->carrusel($this->get('/')->assertOk()->getContent()));
     }
 
     public function test_solo_la_primera_slide_se_ve_antes_de_que_cargue_alpine(): void
@@ -340,6 +361,6 @@ class LandingAnunciosTest extends TestCase
 
         $this->get('/')->assertOk()
             ->assertDontSee('inventado')
-            ->assertSee('bg-[#d75078] hover:bg-[#f285a2]', false);
+            ->assertSee('bg-[#c03a63] hover:bg-[#a13153]', false);
     }
 }

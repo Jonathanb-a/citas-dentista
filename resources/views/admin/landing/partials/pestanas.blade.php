@@ -1,9 +1,10 @@
-{{-- Pestañas de "Landing Page": $activa = anuncios | contenido | galeria | contacto --}}
+{{-- Pestañas de "Landing Page": $activa = anuncios | contenido | galeria | testimonios | contacto --}}
 @php
     $pestanas = [
         'anuncios' => ['Anuncios', route('admin.anuncios.index')],
         'contenido' => ['Imágenes y textos', route('admin.landing.contenido')],
         'galeria' => ['Galería', route('admin.landing.galeria')],
+        'testimonios' => ['Opiniones', route('admin.landing.testimonios')],
         'contacto' => ['Contacto', route('admin.landing.contacto')],
     ];
 @endphp

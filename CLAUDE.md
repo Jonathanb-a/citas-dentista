@@ -100,13 +100,36 @@ ponerlos en el .env local y en las variables de Railway:
   referencia y una prueba lo compara. Si algún día cambias la landing a
   propósito, regenera ese archivo; si la prueba falla sin que lo
   hayas hecho, algo se coló en la landing
+- **Orden de la landing** (`welcome.blade.php` y `resources/views/partials/landing-*`):
+  hero → `#tratamientos` → carrusel `#novedades` (si hay anuncios) →
+  `#nosotros` (misión, visión y `#certificados` en bloques compactos) →
+  `#galeria` → `#testimonios` (si hay opiniones autorizadas) → `#agendar`
+  (franja final: título y texto editables `agendar.*`, botones fijos a
+  `route('paciente.citas.create')` y `/register`) → `#contacto` → pie
+- El navbar y el pie enlazan solo a secciones que se muestran:
+  `LandingController` comparte `$navegacion` (sin tratamientos ni opiniones
+  si no hay). El menú completo se ve desde `lg`; abajo, el desplegable
+  (botón con nombre, `aria-expanded`, Esc lo cierra). Las secciones del menú
+  llevan `scroll-mt` para que el navbar fijo no tape su título
+- Colores con texto en la landing: AA (4.5:1). Botones `#c03a63` con hover
+  `#a13153`, enlaces de texto `#c03a63`; `#d75078` y `#f285a2` solo en
+  fondos, íconos y bordes
+- **Tratamientos (`#tratamientos`)**: `partials/landing-tratamientos`, tras
+  el hero (sustituyó a la cinta rosa fija, que anunciaba servicios que no
+  estaban en el catálogo). `LandingController` pasa `$tratamientos`: las
+  especialidades activas con sus servicios activos (los mismos que el
+  paciente puede agendar), con nombre, descripción y duración; sin precio,
+  porque el sistema no lo maneja. Se editan en el panel (Especialidades y
+  Servicios). Sin servicios activos, o si la consulta falla, la sección no
+  se muestra (no 500)
 - Avisos y promociones vigentes salen juntos en un carrusel
   (`partials/landing-carrusel`, sección `#novedades`, máx. 8 slides) tras
-  la cinta rosa de servicios y antes de `#nosotros`, en el orden del
-  panel (`anuncios.orden`, se cambia con ▲▼). La cinta rosa es texto fijo
-  de la vista, no son anuncios. Alpine: `resources/js/carrusel-anuncios.js`
-  (avance cada 6 s, pausa con mouse/foco/toque, flechas, puntos, deslizar;
-  con una sola slide no hay controles ni Alpine)
+  `#tratamientos` y antes de `#nosotros`, en el orden del
+  panel (`anuncios.orden`, se cambia con ▲▼). Alpine: `resources/js/carrusel-anuncios.js`
+  (avance cada 6 s, pausa con mouse/foco/toque, botón Pausar/Reanudar,
+  flechas en pantalla y del teclado, puntos, deslizar; controles de 44 px.
+  Con "reducir movimiento" no avanza solo ni muestra el botón de pausa; con
+  una sola slide no hay controles ni Alpine)
 - Vigente = activo y dentro de las fechas (extremos incluidos, ambas
   opcionales). "Hoy" se calcula en `config('consultorio.zona_horaria')`
   (America/Mexico_City), porque la app corre en UTC
@@ -145,9 +168,9 @@ ponerlos en el .env local y en las variables de Railway:
   idéntica de nuevo
 - Esas comparaciones usan `assertTrue(a === b)` y no `assertSame`: si
   fallaran, PHPUnit tarda minutos en calcular el diff de dos páginas enteras
-- **Faltan en el repositorio 12 de las 14 imágenes originales de la landing**
-  (`mision.png`, `vision.png`, `galeria-1..5.png`, `paciente-1..5.png`,
-  `certificado.png`; solo existen `image 1.png` y el logo): hoy se ven
+- **Faltan en el repositorio 8 imágenes originales de la landing**
+  (`mision.png`, `vision.png`, `galeria-1..5.png` y `certificado.png`;
+  solo existen `image 1.png` y el logo): hoy se ven
   rotas y el panel muestra "La imagen original no está disponible". Hay
   que ponerlas en `public/img/` con esos nombres, o subirlas desde el panel
 - Los datos de contacto originales son de relleno (teléfono 999 123 1234,
@@ -166,13 +189,28 @@ ponerlos en el .env local y en las variables de Railway:
   desde ahí manda la base de datos. Mientras no se ha tocado, un elemento se
   identifica en las URLs del panel por la clave del original (`galeria-1`);
   después, por su id. Un elemento que viene de un original puede volver a su
-  imagen original; uno agregado por la doctora no. Con 3 fotos o menos se
-  ven todas a la vez y la landing no muestra flechas ni puntos
-- En la landing las fotos van a Alpine como un arreglo JavaScript escrito en
-  el atributo `x-data`: los textos se escapan primero para JavaScript
-  (`$js` en `welcome.blade.php`) y luego para HTML. No cambiar ese orden
-- Testimonios (`#testimonios`): siguen fijos en la vista; se harán como
-  módulo aparte con reseñas de pacientes reales
+  imagen original; uno agregado por la doctora no
+- En la landing la galería es una cuadrícula que escribe Blade (cada foto con
+  `loading="lazy"` y su título como texto alternativo; con 1 o 2 fotos queda
+  centrada) y un lightbox en Alpine (`resources/js/galeria-lightbox.js`:
+  Esc, flechas, foco atrapado y de vuelta a la foto). El lightbox lee los
+  datos de los atributos `data-*` de cada foto, escapados por Blade: no hay
+  JavaScript armado a mano. Sin fotos, la sección no se muestra
+- `data-aparecer` anima con `fill-mode: backwards` y no `both`: un transform
+  que se queda puesto hace de contenedor de los `position: fixed` de adentro
+  (el lightbox quedaría encerrado en la sección)
+- **Opiniones (`#testimonios`)**: pestaña "Opiniones" del panel
+  (`Admin\LandingTestimoniosController`), colección `testimonios` de
+  `config/landing.php` guardada en `landing_items` con
+  `LandingColeccionService`. Sin fotos y sin originales (mínimo 0, máximo
+  12). Campos: nombre (puede ser solo nombre e inicial), opinión,
+  calificación de 1 a 5 y la casilla obligatoria "El paciente autorizó
+  publicar esta opinión". La landing (`partials/landing-testimonios`, tras
+  la galería) muestra solo las autorizadas; sin ninguna, la sección no
+  aparece. Las 5 tarjetas inventadas que había antes se quitaron
+- `LandingColeccionService` sirve para listas con o sin imágenes
+  (`imagenes` en la colección) y con campos `texto`, `calificacion` o
+  `casilla`; los avisos de máximo y mínimo van en `textos` de cada colección
 
 ## Imágenes subidas (ImagenService)
 - `App\Services\ImagenService` es el único camino para subir imágenes
@@ -221,15 +259,28 @@ ponerlos en el .env local y en las variables de Railway:
      solas al desplegar). Con Nixpacks o Dockerfile hay que agregar
      `php artisan storage:link --force` al comando de pre-deploy
   4. Si al subir sale "permission denied": variable `RAILWAY_RUN_UID=0`
-  5. Límite de 5 MB por imagen: con Railpack no hay que configurar nada
-     (su php.ini trae `upload_max_filesize = 0` y `post_max_size = 0`, es
-     decir sin límite, y su Caddyfile no limita el cuerpo; revisado en el
-     repo de Railpack, verificar con una subida real). Con Nixpacks/nginx
-     o un Dockerfile propio, los valores por defecto son 2 MB (PHP) y
-     1 MB (nginx) y hay que subirlos: `upload_max_filesize=6M`,
-     `post_max_size=8M` y `client_max_body_size 6m;`. Si Railway rechaza
-     la subida con 413 es el servidor web; si Laravel dice "No se pudo
-     subir la imagen" es PHP
+  5. Límite de 5 MB por imagen: el proyecto trae su propio `php.ini` en la
+     raíz con `upload_max_filesize = 6M` (por archivo) y
+     `post_max_size = 12M` (por petición: la sección "nosotros" de la
+     landing sube 2 imágenes en un mismo formulario). También deja
+     `session.upload_progress.enabled = Off`
+     - Railpack usa ese archivo **en lugar** del suyo, no los combina: por
+       eso es una copia completa de su php.ini (railwayapp/railpack,
+       `core/providers/php/php.ini`, commit 9d1a4ea) con esos cambios. Si
+       Railpack cambia su php.ini, el proyecto no recibe esos cambios:
+       hay que copiarlos a mano conservando los tres valores de arriba
+     - Si se sube `max_kb` (config/imagenes.php) o se agregan imágenes a
+       un formulario, revisar los dos límites (el encabezado del php.ini
+       explica el cálculo)
+     - En local no se lee: Laragon/XAMPP usan su propio php.ini
+     - El Caddyfile de Railpack no limita el cuerpo. Con Nixpacks/nginx o
+       un Dockerfile propio el php.ini de la raíz no se usa: los valores
+       por defecto son 2 MB (PHP) y 1 MB (nginx) y hay que poner los
+       mismos límites (`upload_max_filesize=6M`, `post_max_size=12M`) y
+       `client_max_body_size 12m;`
+     - Si una imagen pasa de 6 MB, Laravel dice "No se pudo subir la
+       imagen" (límite de PHP); si la petición entera pasa de 12 MB,
+       PHP la descarta y Laravel responde 413
   Un Volume sirve solo a una réplica y no tiene respaldo automático. Si
   el enlace público no funciona en Railway, plan B: servir las imágenes
   desde una ruta de Laravel con caché
@@ -291,6 +342,14 @@ npm run dev
 php artisan migrate:fresh --seed
 
 ## Usuarios de prueba
-admin@dentissa.com / admin123
-asistente@dentissa.com / asistente123
-paciente@test.com / paciente123
+- Administrador (la doctora): lo crea `AdminSeeder` con `ADMIN_EMAIL` y
+  `ADMIN_PASSWORD` (config/admin.php). En local, sin esas variables, usa
+  admin@dentissa.com y una contraseña aleatoria que muestra en la consola al
+  sembrar; ponlas en el .env para tener siempre la misma
+- En producción las dos variables son obligatorias y la contraseña debe tener
+  al menos 12 caracteres; si no, el seeder falla sin crear nada. El primer
+  admin se crea con `php artisan db:seed --class=AdminSeeder --force` (no
+  correr `db:seed` a secas: `DatosPruebaSeeder` mete datos de demo). Si el
+  correo ya existe, el seeder no lo modifica
+- El seeder ya no crea la asistente: se da de alta en el módulo Personal
+- paciente@test.com / paciente123 (de `DatosPruebaSeeder`, solo para local)

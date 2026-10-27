@@ -1,14 +1,5 @@
 @import "tailwindcss";
 
-@keyframes marquee {
-    0% { transform: translateX(0); }
-    100% { transform: translateX(-50%); }
-}
-
-.animate-marquee {
-    animation: marquee 20s linear infinite;
-}
-
 @keyframes carousel {
     0% { transform: translateX(0); }
     100% { transform: translateX(-50%); }
@@ -20,4 +11,78 @@
 
 .animate-carousel:hover {
     animation-play-state: paused;
+}
+/* Registro: entrada escalonada (solo transform y opacity). El retraso de cada
+   elemento va en la variable --retraso. Con "reducir movimiento" no se anima
+   nada y todo se ve desde el inicio. */
+@keyframes registro-entrada {
+    from { opacity: 0; transform: translateY(12px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes registro-entrada-lateral {
+    from { opacity: 0; transform: translateX(24px); }
+    to { opacity: 1; transform: translateX(0); }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+    .registro-entrada {
+        animation: registro-entrada 0.6s cubic-bezier(0.2, 0.7, 0.2, 1) both;
+        animation-delay: var(--retraso, 0ms);
+    }
+
+    .registro-entrada-lateral {
+        animation: registro-entrada-lateral 0.8s cubic-bezier(0.2, 0.7, 0.2, 1) both;
+        animation-delay: var(--retraso, 0ms);
+    }
+}
+
+/* Aparecer al hacer scroll (resources/js/aparecer.js): reutiliza registro-entrada.
+   Sin JavaScript el atributo queda vacío y todo se ve; con "reducir movimiento"
+   o al imprimir no se esconde nada. */
+@media screen and (prefers-reduced-motion: no-preference) {
+    [data-aparecer="oculto"] {
+        opacity: 0;
+        transform: translateY(12px);
+    }
+
+    /* backwards y no both: al terminar no queda ningún transform puesto, que haría de
+       contenedor de los position: fixed de adentro (el lightbox de la galería) */
+    [data-aparecer="animar"] {
+        animation: registro-entrada 0.6s cubic-bezier(0.2, 0.7, 0.2, 1) backwards;
+        animation-delay: var(--retraso, 0ms);
+    }
+}
+
+/* Hero: ilustración del diente cuando no hay imagen (solo transform y opacity) */
+@keyframes hero-flotar {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-10px); }
+}
+
+@keyframes hero-destello {
+    0%, 100% { opacity: 0.25; transform: scale(0.8); }
+    50% { opacity: 1; transform: scale(1); }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+    .hero-flotar {
+        animation: hero-flotar 6s ease-in-out infinite;
+    }
+
+    .hero-destello {
+        transform-box: fill-box;
+        transform-origin: center;
+        animation: hero-destello 3s ease-in-out infinite;
+        animation-delay: var(--retraso, 0ms);
+    }
+}
+
+/* Enlaces internos de la landing (#seccion): desplazamiento suave, salvo con
+   "reducir movimiento". Cada sección lleva scroll-mt para que el navbar fijo no
+   tape su título al llegar */
+@media (prefers-reduced-motion: no-preference) {
+    html {
+        scroll-behavior: smooth;
+    }
 }

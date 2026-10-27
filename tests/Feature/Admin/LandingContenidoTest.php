@@ -95,6 +95,7 @@ class LandingContenidoTest extends TestCase
             'hero' => ['hero'],
             'nosotros' => ['nosotros'],
             'certificados' => ['certificados'],
+            'agendar' => ['agendar'],
             'contacto' => ['contacto'],
             'pie' => ['pie'],
         ];
