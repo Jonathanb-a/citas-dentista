@@ -14,6 +14,8 @@ Entorno local: Laragon. Despliegue: Railway.
 - CitaManualService: crear y reagendar citas (lo usan admin y asistente)
 - PasswordTemporalService: genera y asigna contraseñas temporales (alta de
   paciente en cita manual, restablecer contraseña y módulo Personal)
+- App\Services\IA\ProveedorIA: servicio de IA con proveedor intercambiable
+  (ver "Chatbot con IA" más abajo; el chat de la landing se construye encima)
 - Middleware CheckRole para los roles: admin, asistente, paciente
 
 ## Expediente clínico
@@ -320,6 +322,60 @@ ponerlos en el .env local y en las variables de Railway:
   mensajes reales aunque el .env local tenga token
 - El aviso de "liberada" depende de que el scheduler corra en Railway
   (`php artisan schedule:work` o un cron que ejecute `schedule:run`)
+
+## Chatbot con IA (paso 1: servicio de IA)
+Solo existe el servicio; **todavía no hay endpoint de chat, widget en la landing
+ni herramientas de citas** (son los pasos siguientes).
+
+- `App\Services\IA\ProveedorIA` (interfaz): `responder($mensajes, $herramientas,
+  $instrucciones)` devuelve una `RespuestaIA` con texto, llamadas a herramienta
+  (function calling) o un fallo. **Nunca lanza excepciones**: ante cualquier
+  problema el `texto` trae el mensaje amable de `config('ia.mensaje_error')` y
+  `falla` es true (el `motivo` técnico es solo para el log; no se agrega al historial)
+- Formato neutro en `App\Services\IA\Datos`: `MensajeIA` (usuario, asistente,
+  herramienta), `HerramientaIA` (nombre, descripción, JSON Schema), `LlamadaHerramienta`
+  y `RespuestaIA`. Cada proveedor lo traduce al suyo
+- `ProveedorHttp` (base) concentra lo común: timeout de 15 s (5 s para conectar),
+  errores controlados y log sin secretos. Un proveedor solo implementa
+  `url`, `encabezados`, `cuerpo` e `interpretar`
+- `ProveedorIAFactory` elige la clase según `IA_PROVEEDOR` y el contenedor la
+  entrega donde se pida `ProveedorIA`. Un proveedor mal escrito devuelve
+  `ProveedorNoDisponible` (mensaje amable + aviso en el log), no rompe la página
+- **Agregar un proveedor** (Groq, OpenAI, Anthropic…): una clase que extienda
+  `ProveedorHttp` y una entrada en `config/ia.php` (`clase`, `api_key`, `modelo`…).
+  No se toca nada más. Groq y OpenAI comparten formato (chat completions), así que
+  casi todo el trabajo se reutiliza entre ambos
+- Config en `config/ia.php`; el código nunca llama a `env()` (una prueba lo vigila).
+  Variables (.env local y Railway): `IA_PROVEEDOR=gemini`, una key por proveedor
+  (`GEMINI_API_KEY`, luego `GROQ_API_KEY`…) y `GEMINI_MODELO` (opcional; por
+  defecto `gemini-3.6-flash`, el Flash estable en nov 2026). Cambiar de proveedor
+  es cambiar `IA_PROVEEDOR`. Sin key no se llama a nadie
+- **Gemini** usa la Interactions API (`POST /v1beta/interactions`), la que Google
+  recomienda para integraciones nuevas (`generateContent` quedó como heredada). Va
+  sin estado (`store: false`, se manda el historial completo), con la key en el
+  encabezado `x-goog-api-key` (no en la URL) y la versión del contrato fijada con
+  `Api-Revision`. La documentación está en aistudio.google.com/docs (ai.google.dev
+  redirige ahí)
+- **Firmas de pensamiento**: con los modelos Gemini 3 en adelante, omitir la firma
+  de una llamada a función es un error 400. Por eso la `RespuestaIA` guarda los pasos
+  originales del modelo (`crudo`) y hay que agregar al historial
+  `$respuesta->comoMensaje()`, no un `MensajeIA::asistente()` armado a mano. El
+  orquestador del chat (paso siguiente) hace el bucle: IA pide herramienta, se
+  ejecuta, se manda `MensajeIA::resultado(...)` y se vuelve a preguntar
+- **Log**: solo proveedor, estado HTTP y código de error de la API. Nunca la key ni
+  los mensajes del usuario (pueden traer nombre y teléfono), ni siquiera el
+  `message` del error de la API, que puede repetir lo enviado. Los errores de
+  conexión pasan por un filtro que tapa la key
+- **Privacidad**: el nivel gratuito de Gemini puede usar lo que se envía para
+  mejorar los productos de Google; el de pago no (página de precios de la API).
+  El chatbot mandaría nombre y teléfono del paciente: antes de usarlo con
+  pacientes reales usar el nivel de pago (o limitar qué datos viajan) y no enviar
+  datos clínicos. Pendiente de decidir en el paso de herramientas de citas
+- Pendiente para el endpoint público (paso 2): límite de peticiones por visitante y
+  control de gasto
+- `phpunit.xml` deja `GEMINI_API_KEY` vacío y las pruebas usan `Http::fake()` con
+  `Http::preventStrayRequests()`: ninguna llega a la IA real aunque el .env local
+  tenga key
 
 ## Pendiente técnico
 - `citas.horario_id` tiene `onDelete cascade`: eliminar un horario semanal
