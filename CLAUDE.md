@@ -341,15 +341,42 @@ ni herramientas de citas** (son los pasos siguientes).
 - `ProveedorIAFactory` elige la clase según `IA_PROVEEDOR` y el contenedor la
   entrega donde se pida `ProveedorIA`. Un proveedor mal escrito devuelve
   `ProveedorNoDisponible` (mensaje amable + aviso en el log), no rompe la página
-- **Agregar un proveedor** (Groq, OpenAI, Anthropic…): una clase que extienda
-  `ProveedorHttp` y una entrada en `config/ia.php` (`clase`, `api_key`, `modelo`…).
-  No se toca nada más. Groq y OpenAI comparten formato (chat completions), así que
-  casi todo el trabajo se reutiliza entre ambos
+- **Proveedores hoy**: `GroqProveedor` (el predeterminado) y `GeminiProveedor`.
+  **Agregar otro** (OpenAI, Anthropic…): una clase que extienda `ProveedorHttp` y una
+  entrada en `config/ia.php` (`clase`, `api_key`, `modelo`…). No se toca nada más.
+  OpenAI usa el mismo formato (chat completions) que Groq, así que `GroqProveedor`
+  es el punto de partida
 - Config en `config/ia.php`; el código nunca llama a `env()` (una prueba lo vigila).
-  Variables (.env local y Railway): `IA_PROVEEDOR=gemini`, una key por proveedor
-  (`GEMINI_API_KEY`, luego `GROQ_API_KEY`…) y `GEMINI_MODELO` (opcional; por
-  defecto `gemini-3.6-flash`, el Flash estable en nov 2026). Cambiar de proveedor
-  es cambiar `IA_PROVEEDOR`. Sin key no se llama a nadie
+  Variables (.env local y Railway): `IA_PROVEEDOR` (por defecto `groq`), una key por
+  proveedor (`GROQ_API_KEY`, `GEMINI_API_KEY`…) y el modelo de cada uno
+  (`GROQ_MODELO`, por defecto `openai/gpt-oss-120b`; `GEMINI_MODELO`, por defecto
+  `gemini-3.6-flash`). Cambiar de proveedor es cambiar `IA_PROVEEDOR`. Sin key no
+  se llama a nadie. `php artisan ia:probar` (comando temporal) usa el proveedor de
+  `IA_PROVEEDOR` con la key real del .env
+- **Groq** (`GroqProveedor`): API compatible con OpenAI,
+  `POST https://api.groq.com/openai/v1/chat/completions`, key en
+  `Authorization: Bearer` (no en la URL). Herramientas como `{type: function,
+  function: {...}}`; los argumentos de cada llamada llegan como **cadena JSON** y se
+  decodifican (si no son JSON válido, fallo amable). No hay firmas que reenviar:
+  el historial se reconstruye del formato neutro. **No se manda `name` en ningún
+  mensaje**: Groq lo rechaza con 400 (`tool_call_id` basta). Documentación:
+  console.groq.com/docs (tool-use, models, rate-limits, your-data)
+  - Modelo `openai/gpt-oss-120b`: de producción, con herramientas y en el plan
+    gratuito (no admite llamadas en paralelo; el flujo de citas es secuencial).
+    Alternativa `qwen/qwen3.8-27b`, pero está en **Preview** y Groq puede
+    descontinuarla sin aviso. Llama 3.3 70B y 3.1 8B ya son solo Enterprise
+  - `reasoning_effort` (`low` por defecto, en `config/ia.php`; `medium`/`high` o
+    `null` para no mandarlo): menos latencia y menos tokens. Solo se manda con
+    modelos `openai/gpt-oss*`, porque otros darían 400. `max_tokens` (1024) topa
+    la respuesta, y el razonamiento cuenta dentro. El razonamiento que devuelve el
+    modelo (`message.reasoning`) se ignora: nunca llega al visitante
+  - **Límites del plan gratuito** en gpt-oss-120b: 30 peticiones/min, 1.000/día,
+    **8.000 tokens/min** y 200.000/día (verificar los de la cuenta en su página de
+    límites). Cada mensaje reenvía historial, instrucciones y herramientas
+    (≈2-3 mil tokens): con varios visitantes a la vez llega el 429 y el visitante
+    ve el mensaje amable. Para producción, el plan Developer (250.000 tokens/min)
+  - **Gemini** quedó como alternativa: la cuenta actual recibe 403 "free tier not
+    available for this project" y Google pide activar la facturación
 - **Gemini** usa la Interactions API (`POST /v1beta/interactions`), la que Google
   recomienda para integraciones nuevas (`generateContent` quedó como heredada). Va
   sin estado (`store: false`, se manda el historial completo), con la key en el
@@ -366,14 +393,17 @@ ni herramientas de citas** (son los pasos siguientes).
   los mensajes del usuario (pueden traer nombre y teléfono), ni siquiera el
   `message` del error de la API, que puede repetir lo enviado. Los errores de
   conexión pasan por un filtro que tapa la key
-- **Privacidad**: el nivel gratuito de Gemini puede usar lo que se envía para
-  mejorar los productos de Google; el de pago no (página de precios de la API).
-  El chatbot mandaría nombre y teléfono del paciente: antes de usarlo con
-  pacientes reales usar el nivel de pago (o limitar qué datos viajan) y no enviar
-  datos clínicos. Pendiente de decidir en el paso de herramientas de citas
+- **Privacidad**: Groq no retiene los datos de inferencia por defecto; solo puede
+  guardar entradas y salidas hasta 30 días para fiabilidad o abuso (se evita con
+  Zero Data Retention en su consola, Data Controls), en servidores de EE. UU. Gemini:
+  el nivel gratuito puede usar lo enviado para mejorar los productos de Google; el
+  de pago no. El chatbot mandaría nombre y teléfono del paciente: no enviar datos
+  clínicos y valorar activar Zero Data Retention antes de usarlo con pacientes
+  reales. Pendiente de decidir en el paso de herramientas de citas
 - Pendiente para el endpoint público (paso 2): límite de peticiones por visitante y
   control de gasto
-- `phpunit.xml` deja `GEMINI_API_KEY` vacío y las pruebas usan `Http::fake()` con
+- `phpunit.xml` fija `IA_PROVEEDOR=groq` y deja las keys y los modelos vacíos (así
+  el .env local no cambia las pruebas); estas usan `Http::fake()` con
   `Http::preventStrayRequests()`: ninguna llega a la IA real aunque el .env local
   tenga key
 

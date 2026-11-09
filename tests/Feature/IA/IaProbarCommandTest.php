@@ -66,4 +66,25 @@ class IaProbarCommandTest extends TestCase
 
         Http::assertNothingSent();
     }
+
+    public function test_usa_el_proveedor_de_ia_proveedor(): void
+    {
+        config([
+            'ia.proveedor' => 'groq',
+            'ia.proveedores.groq.api_key' => self::KEY,
+            'ia.proveedores.groq.modelo' => 'openai/gpt-oss-120b',
+        ]);
+        Http::fake(['api.groq.com/*' => Http::response(['choices' => [['finish_reason' => 'stop', 'message' => ['content' => 'hola']]]])]);
+
+        $this->artisan('ia:probar')
+            ->expectsOutputToContain('Proveedor: groq')
+            ->expectsOutputToContain('Modelo:    openai/gpt-oss-120b')
+            ->expectsOutputToContain('hola')
+            ->doesntExpectOutputToContain(self::KEY)
+            ->assertSuccessful();
+
+        Http::assertSent(fn (Request $r) => $r->url() === 'https://api.groq.com/openai/v1/chat/completions'
+            && $r['messages'] === [['role' => 'user', 'content' => 'Responde solo: hola']]
+            && !isset($r['tools']));
+    }
 }

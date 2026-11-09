@@ -6,6 +6,7 @@ use App\Services\IA\Datos\HerramientaIA;
 use App\Services\IA\Datos\MensajeIA;
 use App\Services\IA\Datos\RespuestaIA;
 use App\Services\IA\GeminiProveedor;
+use App\Services\IA\GroqProveedor;
 use App\Services\IA\ProveedorIA;
 use App\Services\IA\ProveedorNoDisponible;
 use Illuminate\Log\Events\MessageLogged;
@@ -43,15 +44,31 @@ class ProveedorIAFactoryTest extends TestCase
         Event::listen(MessageLogged::class, fn (MessageLogged $e) => $this->log[] = $e->message);
     }
 
-    public function test_por_defecto_usa_gemini(): void
+    public function test_usa_groq_segun_ia_proveedor(): void
     {
-        $this->assertSame('gemini', config('ia.proveedor'));
+        // phpunit.xml fija IA_PROVEEDOR=groq para que el .env local no cambie las pruebas
+        $this->assertSame('groq', config('ia.proveedor'));
+        $this->assertInstanceOf(GroqProveedor::class, app(ProveedorIA::class));
+    }
+
+    public function test_gemini_sigue_disponible_cambiando_ia_proveedor(): void
+    {
+        config(['ia.proveedor' => 'gemini']);
+
         $this->assertInstanceOf(GeminiProveedor::class, app(ProveedorIA::class));
     }
 
-    public function test_el_modelo_por_defecto_es_un_flash_y_se_cambia_con_la_config(): void
+    public function test_el_proveedor_por_defecto_del_archivo_de_config_es_groq(): void
     {
+        $this->assertStringContainsString("env('IA_PROVEEDOR') ?: 'groq'", file_get_contents(config_path('ia.php')));
+    }
+
+    public function test_los_modelos_por_defecto_y_la_configuracion_de_groq(): void
+    {
+        $this->assertSame('openai/gpt-oss-120b', config('ia.proveedores.groq.modelo'));
         $this->assertSame('gemini-3.6-flash', config('ia.proveedores.gemini.modelo'));
+        $this->assertSame('low', config('ia.proveedores.groq.reasoning_effort'));
+        $this->assertSame('https://api.groq.com/openai/v1/chat/completions', config('ia.proveedores.groq.url'));
     }
 
     public function test_un_proveedor_nuevo_se_agrega_solo_con_config(): void

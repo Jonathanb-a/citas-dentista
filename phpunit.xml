@@ -30,8 +30,11 @@
         <env name="QUEUE_CONNECTION" value="sync"/>
         <env name="TELEGRAM_BOT_TOKEN" value=""/>
         <env name="TELEGRAM_CHAT_IDS" value=""/>
-        <env name="IA_PROVEEDOR" value="gemini"/>
+        <env name="IA_PROVEEDOR" value="groq"/>
+        <env name="GROQ_API_KEY" value=""/>
+        <env name="GROQ_MODELO" value=""/>
         <env name="GEMINI_API_KEY" value=""/>
+        <env name="GEMINI_MODELO" value=""/>
         <env name="ADMIN_EMAIL" value=""/>
         <env name="ADMIN_PASSWORD" value=""/>
         <env name="SESSION_DRIVER" value="array"/>
