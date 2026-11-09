@@ -29,6 +29,7 @@ class ChatService
         private LimiteGlobalIA $limiteGlobal,
         private HerramientasChat $herramientas,
         private ConfirmacionAgendado $confirmacion,
+        private LimpiezaRespuesta $limpieza,
     ) {}
 
     /**
@@ -66,7 +67,8 @@ class ChatService
                 }
 
                 if (!$respuesta->pideHerramientas()) {
-                    $texto = trim((string) $respuesta->texto);
+                    // Sin las acotaciones del modelo al final, antes de firmar y devolver
+                    $texto = $this->limpieza->limpiar((string) $respuesta->texto);
 
                     return $texto === ''
                         ? $this->fallo((string) config('ia.mensaje_error'))

@@ -457,6 +457,18 @@ historial viaja del navegador en cada petición: **no se guarda nada en la base 
   `{{direccion}}` (de `config/consultorio.php`) y `{{fecha_hora}}`. **No lleva
   teléfono**: el de la landing aún es de relleno y el asistente daría un número
   falso; ponerlo cuando la clínica lo confirme
+- **Acotaciones del modelo**: a veces el modelo cierra con "(Esperando respuesta del
+  usuario)" o "[Pausa]". Dos defensas: el prompt le prohíbe escribir acotaciones, notas
+  internas o descripciones de su estado entre paréntesis o corchetes, y `LimpiezaRespuesta`
+  (usada por `ChatService` antes de firmar y devolver) quita del FINAL del texto del modelo
+  los paréntesis o corchetes (uno o varios) cuyo contenido EMPIEZA con una palabra de
+  acotación: esperando, aguardando, espero, pausa, nota, pensando, escribiendo,
+  procesando, silencio, sistema, acotación, "el usuario"/"la usuaria" (sin importar
+  mayúsculas ni acentos; palabra completa: "Esperanza" no cuenta). No toca paréntesis
+  legítimos ("(10:00 AM)", "(frente al parque)") ni acotaciones a mitad de la frase; si la
+  respuesta era solo una acotación, se responde el mensaje amable. No se aplica a los
+  resúmenes que escribe el servidor (van atados a una firma exacta). Para sumar una
+  palabra, agregarla a `LimpiezaRespuesta::PALABRAS` y a sus pruebas
 - **Prompt injection, por capas**: las instrucciones van en el mensaje `system`
   aparte y el texto del visitante solo entra como mensaje de usuario (nunca se
   concatena ni se interpola); roles inventados y turnos del asistente falsificados
