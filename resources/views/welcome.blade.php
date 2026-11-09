@@ -175,4 +175,9 @@
 {{-- PIE --}}
 @include('partials.landing-pie')
 
+{{-- CHAT: solo con el chat activo y la key del proveedor (sin eso la landing es idéntica a la original) --}}
+@if(!empty($chatActivo))
+    @include('partials.landing-chat')
+@endif
+
 </x-layout>

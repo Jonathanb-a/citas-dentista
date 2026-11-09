@@ -331,7 +331,7 @@ ponerlos en el .env local y en las variables de Railway:
 ## Chatbot con IA (paso 1: servicio de IA)
 Pasos: 1 servicio de IA (este apartado), 2 endpoint `POST /chat` (apartado
 siguiente), 3 herramientas de citas (ver horarios, agendar) y 4 botón/widget en la
-landing. **Todavía no hay widget** (las herramientas de citas ya existen: paso 3).
+landing (los cuatro pasos ya existen; ver "paso 4" para el widget).
 
 - `App\Services\IA\ProveedorIA` (interfaz): `responder($mensajes, $herramientas,
   $instrucciones)` devuelve una `RespuestaIA` con texto, llamadas a herramienta
@@ -414,7 +414,7 @@ landing. **Todavía no hay widget** (las herramientas de citas ya existen: paso 
 
 ## Chatbot con IA (paso 2: endpoint `POST /chat`)
 Ruta pública `chat.enviar` (`ChatController`, `ChatRequest`, `Services/Chat/*`,
-config en `config/chat.php`). Con las herramientas del paso 3; sin widget todavía. El
+config en `config/chat.php`). Con las herramientas del paso 3 y el widget del paso 4. El
 historial viaja del navegador en cada petición: **no se guarda nada en la base de datos**.
 
 - **Petición**: JSON `{mensaje, historial?}`. `historial` son turnos completos que
@@ -521,7 +521,7 @@ paciente. Código en `Services/Chat/Herramientas/`, registro en `HerramientasCha
   Cualquier otra cosa genera una propuesta nueva. Por eso "agenda sin preguntar" no
   funciona. Tras agendar, el servidor escribe la confirmación (`chat.mensajes.agendada`)
   y no hace otra llamada a la IA
-- **Contrato con el widget (paso 4)**: guardar `pendiente` de la última respuesta y
+- **Contrato con el widget (paso 4, ya implementado)**: guardar `pendiente` de la última respuesta y
   mandarlo en la petición siguiente (`pendiente`, junto con `mensaje` e `historial`); el
   historial sigue siendo solo texto con firma. Sin respuesta (error, 429…) no se agrega al
   historial. Las llamadas y resultados de herramientas **nunca viajan por el navegador**
@@ -585,6 +585,93 @@ paciente. Código en `Services/Chat/Herramientas/`, registro en `HerramientasCha
   Prueba", teléfonos 555 010 00xx). Se verificó quitando a propósito cada defensa
   (confirmación, "sí" claro, paciente real, una cita por mensaje, topes, hash del resumen,
   caducidad, firma, vueltas, confirmación de la clínica…): cada una hace fallar pruebas
+
+## Chatbot con IA (paso 4: widget en la landing)
+Botón flotante "Agenda tu cita" y ventana de chat solo en la landing pública. Archivos:
+`partials/landing-chat.blade.php` (estructura), `resources/js/chat-widget.js` (componente
+Alpine `chatWidget`, registrado en `app.js` como el carrusel y el lightbox) y unos
+cuantos estilos en `app.css` (puntos de "escribiendo"). Los datos del servidor (URL de
+`chat.enviar`, de `chat.token`, token CSRF, máx. de caracteres y nombre del consultorio)
+viajan en atributos `data-*` escapados por Blade.
+
+- **Cuándo aparece**: solo si `config('chat.activo')` (`CHAT_ACTIVO`, por defecto true;
+  `false`/`0`/`off`/`no` lo apaga sin quitar la key) **y** el proveedor de IA elegido
+  existe y tiene key (`ChatActivo`, calculado en `LandingController`, que nunca puede
+  tumbar la landing). **Sin eso la landing es idéntica a la original** y
+  `tests/Fixtures/landing-sin-anuncios.html` sigue verde sin tocarlo (las pruebas corren
+  sin key). Con el chat activo el widget va entre `<!-- chat-widget:inicio -->` y
+  `<!-- chat-widget:fin -->`: una prueba quita ese bloque y comprueba que el resto de la
+  landing sigue siendo idéntico al fixture. Si algún día se activa el chat en producción y
+  el widget no aparece, falta `GROQ_API_KEY` (o `CHAT_ACTIVO=false`)
+- **Solo en la landing**: se incluye desde `welcome.blade.php` (el único que usa
+  `x-layout`), no desde el layout ni el navbar; una prueba verifica que login, registro,
+  "olvidé mi contraseña" y los paneles de admin, asistente y paciente no lo traen
+- **Contrato**: `POST /chat` con `X-CSRF-TOKEN` y `{mensaje, historial, pendiente}`. El
+  historial solo lleva turnos completos (pregunta + respuesta firmada), los últimos 6
+  (12 mensajes); lo que terminó en error, 429 o caída no entra, ni su aviso. Se guarda la
+  firma de cada respuesta y el `pendiente` de la última `ok: true` (null lo borra); si la
+  petición falla, el anterior se conserva (sigue vigente unos minutos). Un reintento manda
+  la misma pregunta
+- **Respuestas**: `ok:true` se muestra; `ok:false` muestra el mensaje amable con
+  "No se envió" y "Reintentar"; `422` muestra el texto del servidor y, si ya había
+  historial, "Empezar de nuevo"; `429` muestra el mensaje y, si `Retry-After` ≤ 120 s,
+  bloquea el envío con cuenta regresiva (un `Retry-After` largo es el límite diario: solo el
+  aviso); `419` pide un token nuevo con `GET /chat/token` y reintenta **una sola vez**
+  sin perder la conversación (si falla de nuevo: "Tu sesión caducó. Recarga la página");
+  red caída, 5xx con HTML (no JSON) o 35 s sin respuesta: "No pude conectarme" con
+  "Reintentar". A los 15 s dice "Sigo pensando…"
+- **`GET /chat/token`** (`chat.token`, 20 por minuto por IP): `{token}` con `no-store`. El
+  historial firmado no depende de la sesión, por eso se puede recuperar una sesión
+  caducada sin perder la conversación. El mismo origen impide que otro sitio lo lea
+- **Presupuesto de tiempo** (`chat.max_segundos`, 30): antes de cada vuelta del bucle de
+  herramientas el servidor revisa que quepa otra llamada a la IA (`ia.timeout`); si no,
+  mensaje amable (`chat.mensajes.tiempo`). La primera llamada siempre se hace. Nota: en
+  Linux (Railway) `max_execution_time` mide tiempo de CPU y NO la espera de la red; en
+  Windows (Laragon/XAMPP) sí mide tiempo real. El tope sirve sobre todo para que una
+  petición no deje al visitante esperando más de 30 s
+- **UX**: bienvenida escrita en Blade (no entra al historial) con el aviso de no compartir
+  información médica; sugerencias "Agendar una cita" y "Ver horarios" hasta que el
+  visitante escribe; Enter envía, Shift+Enter salto de línea, Enter durante una
+  composición de teclado (IME) se ignora; envío desactivado mientras espera (el campo sigue
+  editable); contador de 500 caracteres; "Escribiendo…"; scroll automático; reiniciar
+  (cancela la petición en curso y ignora su respuesta tardía); si responde con la ventana
+  cerrada, un punto en el botón avisa. Sin ventana emergente automática
+- **Privacidad**: la conversación vive solo en la memoria de la página: no se guarda nada
+  en el navegador (ni almacenamiento local o de sesión, ni IndexedDB, ni cookies propias).
+  Cerrar la ventana la conserva; recargar la borra, a propósito. Una prueba estática vigila
+  el JS
+- **Texto, nunca HTML**: todo se pinta con `x-text` y `white-space: pre-wrap`; no hay
+  `x-html`, `innerHTML` ni enlaces automáticos (una prueba estática lo vigila en el JS y en
+  el partial). Detalle de Alpine: los mensajes se modifican siempre a través del objeto de
+  la lista (`this.mensajes[...]`); modificar el objeto original no actualiza la pantalla
+- **Posición y diseño**: botón redondo de 56 px abajo a la derecha (`z-40`); ventana de
+  380 px de ancho y hasta 640 px de alto desde `sm`, y casi a pantalla completa en celular
+  (`inset-2`, modal: bloquea el scroll del fondo y atrapa el foco). Navbar y menú móvil
+  `z-50`, ventana `z-[55]`, lightbox `z-60`. **No hay botón flotante de WhatsApp**: el de
+  `#contacto` y los íconos del pie son enlaces normales. El botón **sube justo lo que mide
+  la parte visible del pie** cuando este aparece (variable CSS `--chat-subir`, calculada en
+  `chat-widget.js`), para no tapar los íconos de redes y WhatsApp del pie; no cambia el
+  diseño de la landing. Verificado en 9 anchos (320 a 1920 px) y en todas las posiciones
+  del scroll. Al final de la página en celular el botón queda sobre la esquina del mapa
+  de contacto (un iframe): el mapa se usa con gestos. Si algún día se agrega un botón
+  flotante en esa esquina, hay que subir el del chat
+- **Accesibilidad**: foco al campo al abrir (en pantallas táctiles, a la ventana, para no
+  abrir el teclado de golpe); Escape cierra y devuelve el foco al botón; `role="dialog"`
+  con `aria-labelledby`, `aria-modal` solo en pantalla completa, `role="log"` con
+  `aria-live="polite"`, `role="status"` para "escribiendo", `role="alert"` en los avisos;
+  campo con etiqueta y contador asociado; todos los controles de 44 px como mínimo; foco
+  visible `#a13153`; contraste AA en todos los pares de colores. Con "reducir movimiento"
+  no hay transiciones ni puntos animados y el scroll salta sin animación
+- **Peso**: el componente va en el bundle principal (como el carrusel y el lightbox):
+  JS 91,15 → 97,52 kB (gzip 33,66 → 35,72 kB) y CSS 52,71 → 55,27 kB (gzip 9,59 → 10,14 kB).
+  Si algún día pesara demasiado, se puede pasar a un archivo que solo cargue la landing
+- **Pruebas**: `ChatWidgetTest` (PHPUnit: presencia y ausencia, fixture, vistas sin widget,
+  vigilancia estática, token y presupuesto de tiempo). El JavaScript **no** tiene pruebas
+  automáticas en el repositorio (no hay framework de pruebas de JS); se verificó con
+  Playwright (más de 160 comprobaciones: contrato, las seis respuestas, XSS, privacidad,
+  movimiento reducido, accesibilidad, contraste, solapes y un recorrido completo contra el
+  backend real con un Groq falso, incluido agendar una cita). Pendiente: el teclado
+  virtual de iOS no se pudo comprobar
 
 ## Pendiente técnico
 - `citas.horario_id` tiene `onDelete cascade`: eliminar un horario semanal

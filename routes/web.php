@@ -28,6 +28,7 @@ Route::get('/', [LandingController::class, 'index'])->name('landing');
 
 // Chat con IA de la landing: público, con CSRF (grupo web), límite por IP (RateLimiter 'chat') y tope global diario
 Route::post('/chat', \App\Http\Controllers\ChatController::class)->middleware('throttle:chat')->name('chat.enviar');
+Route::get('/chat/token', [\App\Http\Controllers\ChatController::class, 'token'])->middleware('throttle:20,1')->name('chat.token');
 
 // Autenticación
 Route::get('/login', [LoginController::class, 'show'])->name('login');

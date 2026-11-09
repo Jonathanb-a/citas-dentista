@@ -14,6 +14,16 @@ use Illuminate\Http\JsonResponse;
  */
 class ChatController extends Controller
 {
+    /**
+     * GET /chat/token: un token CSRF nuevo para el widget. Con la sesión caducada (419) el widget
+     * lo pide y reintenta sin perder la conversación: el historial firmado no depende de la sesión.
+     * La política del mismo origen impide que otro sitio lea esta respuesta.
+     */
+    public function token(): JsonResponse
+    {
+        return response()->json(['token' => csrf_token()])->header('Cache-Control', 'no-store');
+    }
+
     public function __invoke(ChatRequest $request, ChatService $chat): JsonResponse
     {
         return response()

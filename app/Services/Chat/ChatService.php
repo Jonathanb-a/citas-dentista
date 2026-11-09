@@ -37,6 +37,8 @@ class ChatService
      */
     public function responder(string $mensaje, array $historial, ?string $pendiente = null, string $ip = ''): array
     {
+        $inicio = now()->valueOf();
+
         try {
             $ultimoAsistente = $this->ultimoAsistente($historial);
             $contexto = new ContextoChat($ip, $mensaje, $this->confirmacion->leer($pendiente, $ultimoAsistente));
@@ -47,6 +49,11 @@ class ChatService
             $maxPorVuelta = (int) config('chat.max_herramientas_por_vuelta');
 
             for ($vuelta = 1; $vuelta <= (int) config('chat.max_vueltas'); $vuelta++) {
+                // Presupuesto de tiempo: otra vuelta solo si cabe antes del tope de la petición
+                if ($vuelta > 1 && !$this->quedaTiempo($inicio)) {
+                    return $this->fallo((string) config('chat.mensajes.tiempo'));
+                }
+
                 // Cada llamada a la IA cuenta en el tope global; al alcanzarlo no se llama
                 if (!$this->limiteGlobal->reservar()) {
                     return $this->fallo((string) config('chat.mensajes.limite_global'));
@@ -89,6 +96,20 @@ class ChatService
 
             return $this->fallo((string) config('ia.mensaje_error'));
         }
+    }
+
+    /** ¿Cabe otra llamada a la IA (que puede tardar hasta ia.timeout) dentro del tiempo máximo de la petición? */
+    private function quedaTiempo(float $inicio): bool
+    {
+        $maximo = (int) config('chat.max_segundos');
+
+        if ($maximo <= 0) {
+            return true;
+        }
+
+        $transcurrido = (now()->valueOf() - $inicio) / 1000;
+
+        return $transcurrido + (int) config('ia.timeout') <= $maximo;
     }
 
     private function exito(string $texto, ContextoChat $contexto): array

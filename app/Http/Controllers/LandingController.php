@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Anuncio;
 use App\Models\Especialidad;
+use App\Services\Chat\ChatActivo;
 use App\Services\LandingColeccionService;
 use App\Services\LandingContenidoService;
 use Illuminate\Support\Facades\Log;
@@ -47,6 +48,16 @@ class LandingController extends Controller
         // (o si la lectura falla) la sección no se muestra
         $testimonios = array_values(array_filter($colecciones->items('testimonios'), fn ($opinion) => $opinion['autorizado'] === true));
 
+        // Widget de chat: solo con el chat activo y la key del proveedor puesta; sin eso la landing
+        // es idéntica a la original. Nunca debe tumbar la landing
+        $chatActivo = false;
+
+        try {
+            $chatActivo = app(ChatActivo::class)->activo();
+        } catch (\Throwable $e) {
+            Log::warning('Landing: no se pudo decidir si el chat está activo (' . class_basename($e) . ')');
+        }
+
         // Enlaces del navbar y del pie: solo a las secciones que se muestran
         $navegacion = array_filter([
             '#inicio' => 'Inicio',
@@ -58,6 +69,6 @@ class LandingController extends Controller
         ]);
         View::share('navegacion', $navegacion);
 
-        return view('welcome', compact('anuncios', 'tratamientos', 'landing', 'galeria', 'testimonios'));
+        return view('welcome', compact('anuncios', 'tratamientos', 'landing', 'galeria', 'testimonios', 'chatActivo'));
     }
 }

@@ -6,6 +6,20 @@
  */
 return [
 
+    // El widget de la landing solo aparece si el chat está activo Y el proveedor de IA tiene key
+    // (sin key la landing es idéntica a la original: tests/Fixtures/landing-sin-anuncios.html).
+    // CHAT_ACTIVO=false lo apaga sin quitar la key
+    'activo' => (function () {
+        $valor = env('CHAT_ACTIVO');
+
+        return !($valor === false || in_array(strtolower((string) $valor), ['0', 'off', 'no', 'false'], true));
+    })(),
+
+    // Tiempo máximo (segundos) de una petición del chat. Antes de CADA vuelta del bucle de
+    // herramientas se revisa que quepa otra llamada a la IA (ia.timeout); si no, se responde el
+    // mensaje amable. La primera llamada siempre se hace. 0 = sin tope
+    'max_segundos' => 30,
+
     // Historial que viaja del navegador en cada petición
     'max_mensajes' => 12,
     'max_caracteres' => 500,
@@ -55,6 +69,7 @@ return [
             . 'o comunicarte con el consultorio.',
         'limite_global' => 'Hoy ya atendí muchas conversaciones y no puedo responder más por este medio. '
             . 'Puedes agendar tu cita desde esta página o comunicarte con el consultorio.',
+        'tiempo' => 'Esto está tardando más de lo normal. Intenta de nuevo o comunícate con el consultorio.',
         'vueltas' => 'No logré completar eso por aquí. Intenta con un mensaje más sencillo o comunícate '
             . 'con el consultorio.',
         'no_disponible' => 'No es posible agendar esta cita por el chat. Indica al paciente que se comunique '
