@@ -85,6 +85,17 @@ class User extends Authenticatable implements MustVerifyEmail
         return $this->belongsTo(User::class, 'password_restablecida_por');
     }
 
+    /**
+     * Paciente que agendó por el chat de la landing: no tiene cuenta usable (correo marcador
+     * .invalid y contraseña que nadie conoce), así que no puede confirmar su asistencia por su
+     * cuenta. Para ellos la confirmación de la clínica (que les llama) cuenta como la suya.
+     * Si la clínica le pone su correo real, deja de serlo y confirma como cualquier paciente.
+     */
+    public function esDeChat(): bool
+    {
+        return str_ends_with(strtolower((string) $this->email), '@' . config('chat.agenda.correo_dominio'));
+    }
+
     public function esAdmin()
     {
         return $this->role === 'admin';

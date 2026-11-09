@@ -333,13 +333,13 @@ class GeminiProveedorTest extends TestCase
 
     public function test_los_mensajes_del_usuario_no_aparecen_en_el_log(): void
     {
-        $this->fingir(['error' => ['code' => 'invalid_request', 'message' => 'Valor inválido: Ana Pérez 7531112233']], 400);
+        $this->fingir(['error' => ['code' => 'invalid_request', 'message' => 'Valor inválido: Ana Ejemplo 5550100001']], 400);
 
-        $this->proveedor()->responder([MensajeIA::usuario('Soy Ana Pérez, mi teléfono es 7531112233')]);
+        $this->proveedor()->responder([MensajeIA::usuario('Soy Ana Ejemplo, mi teléfono es 5550100001')]);
 
         $this->assertNotEmpty($this->log);
-        $this->assertStringNotContainsString('Ana Pérez', $this->log());
-        $this->assertStringNotContainsString('7531112233', $this->log());
+        $this->assertStringNotContainsString('Ana Ejemplo', $this->log());
+        $this->assertStringNotContainsString('5550100001', $this->log());
     }
 
     public function test_el_servicio_no_lee_env_directamente(): void

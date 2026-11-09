@@ -38,6 +38,8 @@
         <env name="CHAT_LIMITE_MINUTO" value=""/>
         <env name="CHAT_LIMITE_DIA" value=""/>
         <env name="CHAT_LIMITE_GLOBAL_DIA" value=""/>
+        <env name="CHAT_CITAS_LIMITE_IP_DIA" value=""/>
+        <env name="CHAT_CITAS_LIMITE_DIA" value=""/>
         <env name="ADMIN_EMAIL" value=""/>
         <env name="ADMIN_PASSWORD" value=""/>
         <env name="SESSION_DRIVER" value="array"/>

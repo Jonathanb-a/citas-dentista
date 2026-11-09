@@ -153,16 +153,21 @@ class CitaController extends Controller
             return back()->with('error', 'Solo se pueden confirmar citas pendientes.');
         }
 
+        // El paciente que agendó por el chat no tiene cuenta para confirmar: la clínica le llama y
+        // su aceptación cuenta como la confirmación (si no, la liberación automática la cancelaría)
+        $pacienteDelChat = (bool) $cita->paciente?->esDeChat();
+
         $cita->update([
             'status' => 'confirmada',
             'confirmacion_limite' => Carbon::now()->addHours(24),
+            'confirmado_por_paciente' => $pacienteDelChat ?: $cita->confirmado_por_paciente,
         ]);
 
         HistorialCita::create([
             'cita_id' => $cita->id,
             'user_id' => auth()->id(),
             'accion' => 'confirmada',
-            'descripcion' => 'La cita fue confirmada por ' . auth()->user()->name . '.',
+            'descripcion' => 'La cita fue confirmada por ' . auth()->user()->name . '.' . ($pacienteDelChat ? ' Paciente del chat: la confirmación de la clínica cuenta como la del paciente.' : ''),
         ]);
 
         return back()->with('success', 'Cita confirmada correctamente.');

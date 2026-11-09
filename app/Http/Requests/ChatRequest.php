@@ -3,6 +3,7 @@
 namespace App\Http\Requests;
 
 use App\Services\Chat\FirmaHistorial;
+use App\Services\Chat\TextoPlano;
 use Illuminate\Contracts\Validation\Validator;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Http\Exceptions\HttpResponseException;
@@ -30,14 +31,14 @@ class ChatRequest extends FormRequest
         if (is_array($historial)) {
             foreach ($historial as $i => $turno) {
                 if (is_array($turno) && array_key_exists('texto', $turno)) {
-                    $historial[$i]['texto'] = $this->limpiar($turno['texto']);
+                    $historial[$i]['texto'] = TextoPlano::limpiar($turno['texto']);
                 }
             }
         }
 
         // También null: un texto con UTF-8 inválido debe reemplazar al original, no quedarse
         $this->merge([
-            'mensaje' => $this->limpiar($this->input('mensaje')),
+            'mensaje' => TextoPlano::limpiar($this->input('mensaje')),
             'historial' => $historial,
         ]);
     }
@@ -48,11 +49,14 @@ class ChatRequest extends FormRequest
 
         return [
             'mensaje' => ['required', 'string', 'max:' . $maxCaracteres],
+            // Propuesta firmada de agendado que devolvió la respuesta anterior (ver ConfirmacionAgendado)
+            'pendiente' => ['nullable', 'string', 'max:2000'],
             'historial' => ['nullable', 'array', 'max:' . (int) config('chat.max_mensajes')],
             // array:… rechaza cualquier clave que no sea de este conjunto
             'historial.*' => ['array:rol,texto,firma'],
             'historial.*.rol' => ['required', 'string', Rule::in(['user', 'assistant'])],
-            'historial.*.texto' => ['required', 'string', 'max:' . $maxCaracteres],
+            // Tope de las respuestas del asistente; el de los mensajes del visitante se revisa abajo
+            'historial.*.texto' => ['required', 'string', 'max:' . (int) config('chat.max_caracteres_respuesta')],
             'historial.*.firma' => ['required_if:historial.*.rol,assistant', 'prohibited_if:historial.*.rol,user', 'nullable', 'string', 'size:64'],
         ];
     }
@@ -65,7 +69,7 @@ class ChatRequest extends FormRequest
             }
 
             // Solo estos campos de primer nivel (_token por si el formulario lo manda en el cuerpo)
-            if (array_diff(array_keys($this->all()), ['mensaje', 'historial', '_token']) !== []) {
+            if (array_diff(array_keys($this->all()), ['mensaje', 'historial', 'pendiente', '_token']) !== []) {
                 $validator->errors()->add('historial', 'campos desconocidos');
 
                 return;
@@ -78,6 +82,12 @@ class ChatRequest extends FormRequest
 
                 if ($turno['rol'] !== $esperado) {
                     $validator->errors()->add('historial', 'los turnos deben alternar');
+
+                    return;
+                }
+
+                if ($turno['rol'] === 'user' && mb_strlen($turno['texto']) > (int) config('chat.max_caracteres')) {
+                    $validator->errors()->add('historial', 'mensaje demasiado largo');
 
                     return;
                 }
@@ -101,6 +111,13 @@ class ChatRequest extends FormRequest
         return (string) $this->validated('mensaje');
     }
 
+    public function pendiente(): ?string
+    {
+        $pendiente = $this->validated('pendiente');
+
+        return is_string($pendiente) && $pendiente !== '' ? $pendiente : null;
+    }
+
     /** @return array<int, array{rol: string, texto: string}> */
     public function historial(): array
     {
@@ -117,25 +134,6 @@ class ChatRequest extends FormRequest
         return (array) ($this->input('historial') ?? []);
     }
 
-    /**
-     * Texto limpio: UTF-8 válido, saltos de línea normalizados y sin caracteres de control ni de
-     * formato (invisibles, bidireccionales, "tags" Unicode): sirven para ocultar instrucciones.
-     */
-    private function limpiar(mixed $valor): mixed
-    {
-        if (!is_string($valor)) {
-            return $valor;
-        }
-
-        if (!mb_check_encoding($valor, 'UTF-8')) {
-            return null;
-        }
-
-        $valor = preg_replace('/\r\n?/', "\n", $valor);
-        $valor = preg_replace('/(?!\n)[\p{Cc}\p{Cf}\p{Co}\p{Cn}]/u', '', (string) $valor);
-
-        return trim((string) $valor);
-    }
 
     protected function failedValidation(Validator $validator): void
     {

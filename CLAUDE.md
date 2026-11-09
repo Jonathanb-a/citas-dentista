@@ -16,8 +16,11 @@ Entorno local: Laragon. Despliegue: Railway.
   paciente en cita manual, restablecer contraseña y módulo Personal)
 - App\Services\IA\ProveedorIA: servicio de IA con proveedor intercambiable
   (ver "Chatbot con IA" más abajo; el chat de la landing se construye encima)
-- App\Services\Chat\ChatService: una vuelta del chat público (`POST /chat`):
-  tope global, instrucciones, historial y llamada a la IA
+- App\Services\Chat\ChatService: una petición del chat público (`POST /chat`):
+  bucle de herramientas, tope global, instrucciones, historial y propuesta firmada
+- App\Services\Chat\HerramientasChat y Herramientas/: las tres herramientas de citas
+  de la IA (ver "Chatbot con IA (paso 3)"); `AgendarCita` replica las reglas del
+  agendado normal (no usa CitaManualService, que depende de `auth()`)
 - Middleware CheckRole para los roles: admin, asistente, paciente
 
 ## Expediente clínico
@@ -328,7 +331,7 @@ ponerlos en el .env local y en las variables de Railway:
 ## Chatbot con IA (paso 1: servicio de IA)
 Pasos: 1 servicio de IA (este apartado), 2 endpoint `POST /chat` (apartado
 siguiente), 3 herramientas de citas (ver horarios, agendar) y 4 botón/widget en la
-landing. **Todavía no hay herramientas de citas ni widget.**
+landing. **Todavía no hay widget** (las herramientas de citas ya existen: paso 3).
 
 - `App\Services\IA\ProveedorIA` (interfaz): `responder($mensajes, $herramientas,
   $instrucciones)` devuelve una `RespuestaIA` con texto, llamadas a herramienta
@@ -411,16 +414,18 @@ landing. **Todavía no hay herramientas de citas ni widget.**
 
 ## Chatbot con IA (paso 2: endpoint `POST /chat`)
 Ruta pública `chat.enviar` (`ChatController`, `ChatRequest`, `Services/Chat/*`,
-config en `config/chat.php`). Sin herramientas y sin widget todavía. El historial
-viaja del navegador en cada petición: **no se guarda nada en la base de datos**.
+config en `config/chat.php`). Con las herramientas del paso 3; sin widget todavía. El
+historial viaja del navegador en cada petición: **no se guarda nada en la base de datos**.
 
 - **Petición**: JSON `{mensaje, historial?}`. `historial` son turnos completos que
   alternan `user`, `assistant`, `user`, `assistant`…, máximo **12 mensajes**; cada
-  texto, máximo **500 caracteres**. Solo roles `user` y `assistant`; no se aceptan
+  texto del visitante, máximo **500 caracteres** y cada respuesta del asistente,
+  **1.200** (el servidor recorta sus respuestas a eso antes de firmarlas). Solo roles `user` y `assistant`; no se aceptan
   campos desconocidos (en ningún nivel). Un mensaje sin respuesta (error, 429…) no
   se incluye en el historial. El widget manda el token CSRF en `X-CSRF-TOKEN`
 - **Respuestas** (siempre JSON con un `respuesta` listo para mostrar):
-  - `200 {ok: true, respuesta, firma}`: la IA contestó
+  - `200 {ok: true, respuesta, firma, pendiente}`: la IA contestó (`pendiente` es
+    null salvo cuando hay un agendado esperando el "sí": ver el paso 3)
   - `200 {ok: false, respuesta}`: la IA falló o se acabó el tope global del día
     (mensaje amable, sin firma; no es culpa del visitante)
   - `422`: entrada inválida (nunca repite lo que escribió el visitante)
@@ -479,6 +484,107 @@ viaja del navegador en cada petición: **no se guarda nada en la base de datos**
   ajustar `trustProxies` (o la clave del limitador) antes de abrir el chat
 - Las sesiones y el caché usan `database`: el chat comparte ambos con el resto del
   sitio (el `POST /chat` ya trae sesión desde la landing)
+
+## Chatbot con IA (paso 3: herramientas de citas)
+La IA puede consultar servicios y horarios y agendar una cita nueva. **No hay (ni debe
+haber) herramientas para cancelar, reprogramar ni consultar citas existentes**: por chat
+no hay forma segura de verificar quién es el paciente. Si lo piden, la IA los manda a
+contactar al consultorio. Ninguna herramienta lee ni devuelve citas o datos de ningún
+paciente. Código en `Services/Chat/Herramientas/`, registro en `HerramientasChat`
+(cualquier otro nombre que pida el modelo da `herramienta_desconocida`).
+
+- **Herramientas**
+  - `listar_servicios`: activos de especialidades activas (los mismos que ve el paciente),
+    con id, nombre, especialidad, duración y descripción corta. **Sin precio**: `servicios`
+    no tiene esa columna y el sistema no lo maneja
+  - `ver_horarios_libres(servicio_id, fecha)`: espacios libres por `DisponibilidadService`
+    (bloqueos, citas, descansos); máx. 12; solo `hora` y `hora_formato` (el `horario_id`
+    nunca sale)
+  - `agendar_cita(servicio_id, fecha, hora, nombre, apellidos, telefono)`: usa `hora` y no
+    `horario_id`: el servidor busca el espacio libre y deriva el `horario_id`
+- **El servidor valida TODO** lo que pide el modelo (`DatosCita`), y nunca repite lo
+  recibido en los errores: servicio activo; fecha `AAAA-MM-DD` real, **desde mañana** hasta
+  3 meses en la zona del consultorio (hoy no se ofrece: `DisponibilidadService` compara las
+  horas de hoy con `Carbon::now()` en UTC; es un defecto del agendado normal, no del chat);
+  hora `HH:MM` dentro de los espacios libres; teléfono de 10 dígitos (acepta espacios,
+  guiones y lada 52/+52/521; rechaza los que empiezan en 0 o 1, repetidos y secuencias);
+  nombre y apellidos solo letras, 2 a 60 caracteres. El error `{error, mensaje, campos}` le
+  permite corregirse. Espacio ocupado: `horario_no_disponible` con 3 alternativas
+- **Confirmación estricta, verificada por el servidor** (`ConfirmacionAgendado`): la
+  primera llamada válida a `agendar_cita` NO agenda. El servidor escribe el resumen
+  (servicio, fecha, hora, nombre y teléfono, plantilla `chat.mensajes.propuesta`), sin otra
+  llamada a la IA, y devuelve `pendiente`: propuesta firmada (HMAC con `APP_KEY`, 15 min)
+  con los datos y el hash EXACTO de ese resumen. Se agenda solo si, en la petición
+  siguiente: la firma es válida y vigente, el último mensaje del asistente en el historial
+  es ese resumen, la IA llama con exactamente los mismos datos y el último mensaje del
+  visitante es un "sí" claro (sin negaciones, cambios, números ni más de 8 palabras).
+  Cualquier otra cosa genera una propuesta nueva. Por eso "agenda sin preguntar" no
+  funciona. Tras agendar, el servidor escribe la confirmación (`chat.mensajes.agendada`)
+  y no hace otra llamada a la IA
+- **Contrato con el widget (paso 4)**: guardar `pendiente` de la última respuesta y
+  mandarlo en la petición siguiente (`pendiente`, junto con `mensaje` e `historial`); el
+  historial sigue siendo solo texto con firma. Sin respuesta (error, 429…) no se agrega al
+  historial. Las llamadas y resultados de herramientas **nunca viajan por el navegador**
+  (viven dentro de una petición): el servidor reconstruye, desde la propuesta firmada, el
+  intercambio que la produjo para que la IA sepa con qué datos llamar
+- **Bucle** (`ChatService`): máx. **4 vueltas** por mensaje y **3 herramientas** por vuelta;
+  cada llamada a la IA reserva su lugar en `LimiteGlobalIA`; al pasarse, mensaje amable.
+  Una sola llamada válida a `agendar_cita` por mensaje (si el horario no estaba libre, la
+  IA no puede reintentar sola con otro: debe preguntarle al paciente). Se usa
+  `$respuesta->comoMensaje()` para reenviar el historial dentro de la petición
+- **Cuenta del paciente del chat**: `citas.paciente_id` exige un usuario, así que se crea
+  uno interno (rol paciente, expediente vacío, contraseña aleatoria que nadie conoce y
+  correo marcador `chat-…@chat.dentissa.invalid`, `config('chat.agenda.correo_dominio')`).
+  `User::esDeChat()` los reconoce. No pueden entrar a su cuenta; en el panel de pacientes
+  aparecen con ese correo (la clínica puede editarlo y, si le pone uno real, deja de ser
+  "del chat"). Si el teléfono ya es de un paciente real, de la doctora o de la asistente
+  (se compara por los últimos 10 dígitos: hay teléfonos guardados con formato) o de una
+  cuenta inactiva, se rechaza con un mensaje **genérico, idéntico al de otros motivos**
+  (`no_disponible_por_chat`): no se revela si el teléfono existe, no se agenda a nombre de
+  otro y nadie puede llenarle las 3 citas. Un paciente del chat sí puede volver a agendar
+  (misma cuenta, máx. 3 citas activas por teléfono, como el agendado normal)
+- **⚠️ Confirmación a 24 horas**: el paciente del chat no tiene cuenta para pulsar
+  "confirmar", así que la liberación automática (`citas:liberar-no-confirmadas`) lo
+  cancelaría a las 24 h de que la clínica aceptara su cita. Por eso, **la aceptación de la
+  clínica cuenta como confirmación del paciente del chat** (`confirmado_por_paciente =
+  true`) en `Admin\CitaController::confirmar`, `Asistente\CitaController::confirmar` y en
+  `CitaManualService::crear` (existente, confirmada) y `::reagendar`. Para los demás
+  pacientes nada cambia. La clínica debe llamarles para aceptar la cita (el aviso de
+  Telegram lo recuerda)
+- **Al agendar**: cita `pendiente` con `confirmacion_limite` a 24 h (igual que el agendado
+  normal), `HistorialCita` "creada" con "chat web" a nombre del paciente, la nota interna
+  con el nombre dado en el chat y aviso por Telegram `(chat web)` sin teléfono, en segundo
+  plano (su fallo no afecta la cita). El agendado normal tampoco manda correo al paciente,
+  así que aquí tampoco. Todo en una transacción: nada queda a medias, y si el índice único
+  rechaza el espacio (carrera) no queda un paciente huérfano ni se gasta cuota
+- **Spam de agenda**: un chat público baja la barrera para llenar la agenda con citas
+  falsas. Tope de **2 citas por IP y 10 en total al día** (`LimiteCitasChat`;
+  `CHAT_CITAS_LIMITE_IP_DIA` y `CHAT_CITAS_LIMITE_DIA`), que se reserva justo antes de
+  crear y se libera si falla. Las citas pendientes que la clínica no acepta siguen
+  ocupando el horario: revisar y cancelar las sospechosas
+- **Instrucciones** (`resources/prompts/asistente.md`): flujo servicio → fecha → máx. 3
+  horarios → nombre y apellidos → teléfono → `agendar_cita`; no cancela ni reprograma ni
+  consulta; no habla de otros pacientes; y **pide no compartir información médica ni
+  síntomas por el chat ("para eso contacta al consultorio"), sin repetirla ni usarla**. El
+  catálogo de servicios con su id (`{{servicios}}`, de la base de datos) va en las
+  instrucciones: ahorra la llamada a `listar_servicios` en casi todas las conversaciones
+- **Privacidad**: los mensajes no se registran (ni nombres ni teléfonos ni lo escrito),
+  ni se guardan: `motivo` queda vacío y la cita solo lleva el nombre y el teléfono que
+  se necesitan. Los errores de herramienta se registran por su nombre y la clase de la
+  excepción. El modelo recibe nombre y teléfono del paciente dentro de la conversación
+  (ver la nota de privacidad de Groq en el paso 1)
+- **⚠️ Plan gratuito de Groq**: cada llamada con herramientas pesa 2.500–3.500 tokens y el
+  plan gratuito da 8.000 por minuto: un mensaje con 2–3 llamadas ya puede dar 429 a media
+  conversación (mensaje amable). El resumen y la confirmación los escribe el servidor y el
+  catálogo va en las instrucciones justamente para ahorrar llamadas, pero para tráfico real
+  conviene el plan Developer (250.000 tokens/min). Cada llamada cuenta en `LimiteGlobalIA`
+  (800 al día): ≈2–4 por mensaje con herramientas
+- **Deuda técnica**: la lógica de crear una cita está repetida (agendado del paciente,
+  `CitaManualService` y `AgendarCita`); conviene unificarla cuando se pueda tocar sin riesgo
+- **Pruebas**: todo con `Http::fake()` y datos ficticios (nombres como "Ana Ejemplo
+  Prueba", teléfonos 555 010 00xx). Se verificó quitando a propósito cada defensa
+  (confirmación, "sí" claro, paciente real, una cita por mensaje, topes, hash del resumen,
+  caducidad, firma, vueltas, confirmación de la clínica…): cada una hace fallar pruebas
 
 ## Pendiente técnico
 - `citas.horario_id` tiene `onDelete cascade`: eliminar un horario semanal

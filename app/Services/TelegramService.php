@@ -39,9 +39,14 @@ class TelegramService
 
     // ---------- Avisos por evento (texto corto, sin datos clínicos) ----------
 
-    public function citaAgendada(Cita $cita): void
+    /** $origen y $nota son opcionales (p. ej. 'chat web'); sin teléfono ni datos clínicos, como todos los avisos */
+    public function citaAgendada(Cita $cita, ?string $origen = null, ?string $nota = null): void
     {
-        $this->seguro(fn () => $this->avisar("🆕 Nueva cita agendada\n" . $this->detalle($cita)));
+        $this->seguro(fn () => $this->avisar(
+            '🆕 Nueva cita agendada' . ($origen ? " ($origen)" : '') . "\n"
+            . $this->detalle($cita)
+            . ($nota ? "\n" . $nota : '')
+        ));
     }
 
     public function citaCancelada(Cita $cita): void

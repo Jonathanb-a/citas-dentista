@@ -63,15 +63,6 @@ class ChatEndpointTest extends ChatTestCase
         $this->assertSame(['system', 'user'], array_column($mensajes, 'role'));
     }
 
-    public function test_todavia_no_manda_herramientas(): void
-    {
-        $this->fingirIA();
-
-        $this->chat(['mensaje' => 'Hola'])->assertOk();
-
-        Http::assertSent(fn (Request $r) => !isset($r['tools']) && !isset($r['tool_choice']));
-    }
-
     public function test_el_texto_del_visitante_nunca_modifica_las_instrucciones_del_sistema(): void
     {
         Carbon::setTestNow('2026-11-09 22:00:00');

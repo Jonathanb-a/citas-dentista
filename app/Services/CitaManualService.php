@@ -69,6 +69,10 @@ class CitaManualService
         }
 
         // 3. Calcular límite de confirmación si se crea como confirmada
+        // (un paciente del chat no puede confirmar por su cuenta: la clínica ya habló con él)
+        $confirmadoPorPaciente = $datos['tipo_paciente'] !== 'nuevo'
+            && $datos['status'] === 'confirmada'
+            && (bool) User::find($pacienteId)?->esDeChat();
         $confirmacionLimite = null;
         if ($datos['status'] === 'confirmada') {
             $confirmacionLimite = Carbon::now()->addHours(24);
@@ -83,7 +87,7 @@ class CitaManualService
                 'fecha' => $datos['fecha'],
                 'hora' => $datos['hora'],
                 'status' => $datos['status'],
-                'confirmado_por_paciente' => false,
+                'confirmado_por_paciente' => $confirmadoPorPaciente,
                 'confirmacion_limite' => $confirmacionLimite,
                 'motivo' => $datos['motivo'] ?? null,
             ]);
@@ -135,7 +139,8 @@ class CitaManualService
                 'hora' => $datos['hora'],
                 'horario_id' => $datos['horario_id'],
                 'status' => 'confirmada',
-                'confirmado_por_paciente' => false,
+                // Un paciente del chat no puede confirmar por su cuenta: reagendarla ya lo habló la clínica
+                'confirmado_por_paciente' => (bool) $cita->paciente?->esDeChat(),
                 'confirmacion_limite' => Carbon::now()->addHours(24),
             ]);
 
