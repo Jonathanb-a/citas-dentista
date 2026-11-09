@@ -26,6 +26,9 @@ use App\Http\Controllers\Paciente\PerfilController;
 // Página principal
 Route::get('/', [LandingController::class, 'index'])->name('landing');
 
+// Chat con IA de la landing: público, con CSRF (grupo web), límite por IP (RateLimiter 'chat') y tope global diario
+Route::post('/chat', \App\Http\Controllers\ChatController::class)->middleware('throttle:chat')->name('chat.enviar');
+
 // Autenticación
 Route::get('/login', [LoginController::class, 'show'])->name('login');
 Route::middleware(['throttle:5,1'])->group(function () {

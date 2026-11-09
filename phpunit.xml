@@ -35,6 +35,9 @@
         <env name="GROQ_MODELO" value=""/>
         <env name="GEMINI_API_KEY" value=""/>
         <env name="GEMINI_MODELO" value=""/>
+        <env name="CHAT_LIMITE_MINUTO" value=""/>
+        <env name="CHAT_LIMITE_DIA" value=""/>
+        <env name="CHAT_LIMITE_GLOBAL_DIA" value=""/>
         <env name="ADMIN_EMAIL" value=""/>
         <env name="ADMIN_PASSWORD" value=""/>
         <env name="SESSION_DRIVER" value="array"/>
