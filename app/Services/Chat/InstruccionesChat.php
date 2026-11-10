@@ -6,12 +6,22 @@ use App\Models\Servicio;
 use Carbon\Carbon;
 
 /**
- * Las instrucciones del sistema salen de resources/prompts/asistente.md. Los únicos valores
- * que se insertan los pone el servidor (config del consultorio y la fecha); el texto del
- * visitante nunca pasa por aquí.
+ * Las instrucciones del sistema salen de resources/prompts/asistente.md. Los únicos valores que se
+ * insertan los pone el servidor: config del consultorio, horario general, servicios, promociones
+ * vigentes y el día de hoy. El texto del visitante nunca pasa por aquí.
+ *
+ * Orden del prompt, de lo más estable a lo más cambiante (Groq reutiliza por prefijo exacto: lo
+ * que cambia va al final y solo el día, no la hora): reglas, horario, servicios, promociones, hoy.
+ * Dos peticiones iguales del mismo día arman exactamente el mismo texto.
  */
 class InstruccionesChat
 {
+    public function __construct(
+        private DatosParaPrompt $datos,
+        private HorarioConsultorio $horario,
+        private PromocionesVigentes $promociones,
+    ) {}
+
     public function texto(): string
     {
         $archivo = (string) config('chat.prompt');
@@ -21,22 +31,35 @@ class InstruccionesChat
             throw new \RuntimeException('No se encontró el archivo de instrucciones del chat.');
         }
 
-        $ahora = Carbon::now((string) config('consultorio.zona_horaria'))->locale('es');
+        $hoy = Carbon::now((string) config('consultorio.zona_horaria'))->locale('es');
 
         // strtr hace un solo recorrido: un valor insertado no se vuelve a interpretar
-        return trim(strtr($plantilla, [
+        $texto = strtr($plantilla, [
             '{{nombre}}' => (string) config('consultorio.nombre'),
             '{{subtitulo}}' => (string) config('consultorio.subtitulo'),
             '{{direccion}}' => (string) config('consultorio.direccion'),
-            // La hora con AM/PM como en el resto del sistema ("p. m." de es se lee peor)
-            '{{fecha_hora}}' => $ahora->translatedFormat('l j \d\e F \d\e Y') . ', ' . $ahora->format('h:i A'),
+            '{{horario}}' => $this->horario->resumen(),
             '{{servicios}}' => $this->catalogo(),
-        ]));
+            '{{promociones}}' => $this->bloquePromociones(),
+            '{{fecha}}' => $hoy->translatedFormat('l j \d\e F \d\e Y'),
+        ]);
+
+        // Sin promociones el bloque queda vacío: sin renglones en blanco de sobra
+        return trim((string) preg_replace("/\n{3,}/", "\n\n", $texto));
+    }
+
+    /** Anuncios y promociones vigentes; sin ninguno, nada (el asistente no menciona promociones) */
+    private function bloquePromociones(): string
+    {
+        $lineas = $this->promociones->lineas();
+
+        return $lineas === '' ? '' : "Promociones y avisos vigentes:\n" . $lineas;
     }
 
     /**
      * Catálogo de servicios con su id, de la base de datos: ahorra una llamada a la IA por
-     * conversación (cada una pesa miles de tokens). Lo escribe la clínica, no el visitante.
+     * conversación (cada una pesa miles de tokens). Lo escribe la clínica, no el visitante, pero
+     * entra como dato: limpio, recortado y sin lo que parezca una instrucción.
      */
     private function catalogo(): string
     {
@@ -44,18 +67,31 @@ class InstruccionesChat
             $servicios = Servicio::where('activo', true)
                 ->whereHas('especialidad', fn ($q) => $q->where('activo', true))
                 ->orderBy('nombre')
+                ->orderBy('id')
                 ->limit(40)
                 ->get(['id', 'nombre', 'duracion_minutos']);
         } catch (\Throwable $e) {
             return '(consulta la lista con la herramienta listar_servicios)';
         }
 
-        if ($servicios->isEmpty()) {
-            return '(por ahora no hay servicios disponibles para agendar por el chat)';
+        $lineas = [];
+
+        foreach ($servicios as $servicio) {
+            if ($this->datos->pareceInstruccion($servicio->nombre)) {
+                $this->datos->registrarOmitido('el servicio', (int) $servicio->id);
+
+                continue;
+            }
+
+            $nombre = $this->datos->limpiar($servicio->nombre, (int) config('chat.instrucciones.titulo_max'));
+
+            if ($nombre !== '') {
+                $lineas[] = '- id ' . $servicio->id . ': ' . $nombre . ' (' . $servicio->duracion_minutos . ' min)';
+            }
         }
 
-        return $servicios
-            ->map(fn (Servicio $s) => '- id ' . $s->id . ': ' . mb_substr((string) TextoPlano::limpiar($s->nombre), 0, 80) . ' (' . $s->duracion_minutos . ' min)')
-            ->implode("\n");
+        return $lineas === []
+            ? '(por ahora no hay servicios disponibles para agendar por el chat)'
+            : implode("\n", $lineas);
     }
 }

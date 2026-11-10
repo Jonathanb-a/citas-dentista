@@ -59,8 +59,17 @@ return [
         'correo_dominio' => 'chat.dentissa.invalid',
     ],
 
-    // Instrucciones del sistema; el servidor rellena {{nombre}}, {{subtitulo}}, {{direccion}} y {{fecha_hora}}
+    // Instrucciones del sistema; el servidor rellena {{nombre}}, {{subtitulo}}, {{direccion}}, {{horario}},
+    // {{servicios}}, {{promociones}} y {{fecha}} (ver InstruccionesChat)
     'prompt' => resource_path('prompts/asistente.md'),
+
+    // Datos de la clínica que entran al prompt (horario, servicios y promociones vigentes): cada
+    // token cuenta, así que se recortan. Los textos largos se cortan en palabra completa con "…"
+    'instrucciones' => [
+        'max_anuncios' => (int) (env('CHAT_PROMPT_ANUNCIOS_MAX') ?: 5),
+        'titulo_max' => (int) (env('CHAT_PROMPT_TITULO_MAX') ?: 80),
+        'descripcion_max' => (int) (env('CHAT_PROMPT_DESCRIPCION_MAX') ?: 140),
+    ],
 
     // Lo que ve el visitante (nunca un error técnico)
     'mensajes' => [

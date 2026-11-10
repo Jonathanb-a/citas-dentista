@@ -161,7 +161,9 @@ class ChatSeguridadTest extends ChatTestCase
         $this->assertStringContainsString(config('consultorio.nombre'), $texto);
         $this->assertStringContainsString(config('consultorio.subtitulo'), $texto);
         $this->assertStringContainsString(config('consultorio.direccion'), $texto);
-        $this->assertStringContainsString('lunes 9 de noviembre de 2026, 04:00 PM', $texto);
+        // Solo el día (sin hora) y al final: la hora cambiaría el prompt cada minuto y rompería el caché de Groq
+        $this->assertStringEndsWith('Hoy es lunes 9 de noviembre de 2026 (hora del consultorio).', $texto);
+        $this->assertStringNotContainsString('04:00', $texto);
         $this->assertStringNotContainsString('{{', $texto);
     }
 
