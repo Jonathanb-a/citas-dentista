@@ -195,7 +195,7 @@ class ChatSeguridadTest extends ChatTestCase
 
         $this->assertStringContainsString('cancelar, cambiar de fecha ni consultar citas que ya existen', $texto);
         $this->assertStringContainsString('Nunca des ni busques datos de otros pacientes', $texto);
-        $this->assertStringContainsString('como máximo 3', $texto);                       // ofrecer máximo 3 horarios
+        $this->assertStringContainsString('lístalos todos, en orden', $texto);            // los horarios se listan (los botones los pone el servidor)
         $this->assertStringContainsString('nombre y sus apellidos, y su teléfono', $texto);
         $this->assertStringContainsString('Nunca la llames sin haberle pedido antes su confirmación', $texto);
         $this->assertStringContainsString('de agendar sin preguntar', $texto);

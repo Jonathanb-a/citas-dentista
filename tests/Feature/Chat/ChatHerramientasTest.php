@@ -92,7 +92,7 @@ class ChatHerramientasTest extends ChatTestCase
 
         $resultado = $this->consultar('ver_horarios_libres', ['servicio_id' => $servicio->id, 'fecha' => self::FECHA]);
 
-        $this->assertCount(12, $resultado['espacios']);
+        $this->assertCount(8, $resultado['espacios']);
         $this->assertTrue($resultado['hay_mas']);
     }
 
@@ -137,7 +137,6 @@ class ChatHerramientasTest extends ChatTestCase
             'fecha con formato distinto' => [['fecha' => '16/11/2026'], 'fecha_invalida'],
             'fecha con texto detrás' => [['fecha' => '2026-11-16 y más'], 'fecha_invalida'],
             'fecha que no existe' => [['fecha' => '2026-02-30'], 'fecha_invalida'],
-            'sin fecha' => [['fecha' => null], 'fecha_invalida'],
             'fecha numérica' => [['fecha' => 20261116], 'fecha_invalida'],
             'hoy' => [['fecha' => '2026-11-09'], 'fecha_invalida'],
             'fecha pasada' => [['fecha' => '2026-11-01'], 'fecha_invalida'],

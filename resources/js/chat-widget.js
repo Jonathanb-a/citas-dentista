@@ -9,11 +9,16 @@
 //   en error o en 429 no entra al historial
 // - `pendiente` es la propuesta firmada de agendado que devolvió la última respuesta; se
 //   manda tal cual en la petición siguiente
+// - `opciones` son los botones que agrega el SERVIDOR a una respuesta (servicios, días, horas):
+//   cada uno es { texto, mensaje }. Tocar uno envía `mensaje` como un mensaje normal del visitante
+//   (mismo flujo y mismos límites). Solo están activos los de la última respuesta, mientras no haya
+//   un mensaje más nuevo. No viajan al servidor ni forman parte del historial
 
 const TURNOS_MAXIMOS = 6; // 12 mensajes: el tope del servidor
 const ESPERA_LENTA_MS = 15000; // pasado esto, "Sigo pensando…"
 const TIEMPO_MAXIMO_MS = 35000;
 const ESPERA_CORTA_MAXIMA = 120; // un Retry-After mayor es el límite diario: sin cuenta regresiva
+const OPCIONES_MAXIMAS = 8; // el tope del servidor
 
 export default function chatWidget() {
     return {
@@ -93,8 +98,7 @@ export default function chatWidget() {
             this.sinLeer = false;
             this.bloquearScroll();
             this.$nextTick(() => {
-                // En pantallas táctiles el foco va a la ventana: enfocar el campo abriría el teclado de golpe
-                (window.matchMedia('(pointer: coarse)').matches ? this.$refs.ventana : this.$refs.campo)?.focus();
+                this.enfocarEntrada();
                 this.scrollAbajo();
             });
         },
@@ -142,6 +146,12 @@ export default function chatWidget() {
             return !this.esperando && this.bloqueoSegundos === 0 && this.texto.trim() !== '' && this.contador <= this.max;
         },
 
+        // Los botones de una respuesta valen solo mientras sea el último mensaje de la conversación
+        // (cualquier mensaje más nuevo, del visitante o un aviso, los desactiva) y se pueda enviar
+        opcionesActivas(mensaje) {
+            return !this.esperando && this.bloqueoSegundos === 0 && this.mensajes[this.mensajes.length - 1]?.id === mensaje.id;
+        },
+
         puedeReintentar(aviso) {
             return aviso.reintentar && !this.esperando && this.bloqueoSegundos === 0 && this.mensajes[this.mensajes.length - 1]?.id === aviso.id;
         },
@@ -185,6 +195,28 @@ export default function chatWidget() {
             this.esperando = true;
             this.scrollAbajo();
             this.pedir(mensaje);
+        },
+
+        // Tocar un botón = el visitante escribe ese mensaje: pasa por enviar() como cualquier otro
+        elegir(mensaje, opcion) {
+            if (!this.opcionesActivas(mensaje) || typeof opcion?.mensaje !== 'string') return;
+            this.enviar(opcion.mensaje);
+            // El botón queda desactivado y pierde el foco: se devuelve a la ventana (o al campo)
+            this.$nextTick(() => this.enfocarEntrada());
+        },
+
+        // En pantallas táctiles el foco va a la ventana: enfocar el campo abriría el teclado de golpe
+        enfocarEntrada() {
+            (window.matchMedia('(pointer: coarse)').matches ? this.$refs.ventana : this.$refs.campo)?.focus();
+        },
+
+        // Solo textos: lo que no tenga la forma esperada se descarta (nunca se pinta como HTML)
+        opcionesDe(datos) {
+            if (!Array.isArray(datos?.opciones)) return [];
+            return datos.opciones
+                .filter((o) => o && typeof o.texto === 'string' && typeof o.mensaje === 'string' && o.texto.trim() !== '' && o.mensaje.trim() !== '')
+                .slice(0, OPCIONES_MAXIMAS)
+                .map((o) => ({ texto: o.texto, mensaje: o.mensaje }));
         },
 
         reintentar(aviso) {
@@ -267,7 +299,7 @@ export default function chatWidget() {
 
             if (respuesta.status === 200 && datos?.ok === true && textoServidor && typeof datos.firma === 'string') {
                 mensaje.estado = 'ok';
-                this.mensajes.push({ id: ++this._id, rol: 'assistant', texto: textoServidor });
+                this.mensajes.push({ id: ++this._id, rol: 'assistant', texto: textoServidor, opciones: this.opcionesDe(datos) });
                 this.turnos.push({ usuario: mensaje.texto, asistente: textoServidor, firma: datos.firma });
                 // null borra la propuesta: solo sirve para el turno siguiente
                 this.pendiente = typeof datos.pendiente === 'string' && datos.pendiente !== '' ? datos.pendiente : null;

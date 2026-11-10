@@ -46,8 +46,8 @@ return [
         // Citas desde mañana (el día de hoy no se ofrece) y hasta 3 meses, como el agendado normal
         'dias_minimos' => 1,
         'meses_maximos' => 3,
-        // Espacios que devuelve una consulta de horarios
-        'max_horarios' => 12,
+        // Espacios que devuelve una consulta de horarios (y botones de hora que ve el visitante)
+        'max_horarios' => 8,
         // Citas activas (pendientes o confirmadas) por teléfono, como el agendado normal
         'citas_activas_max' => 3,
         // Citas agendadas por chat al día: por IP y en total (el spam de agenda es el riesgo)
@@ -69,6 +69,19 @@ return [
         'max_anuncios' => (int) (env('CHAT_PROMPT_ANUNCIOS_MAX') ?: 5),
         'titulo_max' => (int) (env('CHAT_PROMPT_TITULO_MAX') ?: 80),
         'descripcion_max' => (int) (env('CHAT_PROMPT_DESCRIPCION_MAX') ?: 140),
+    ],
+
+    // Botones que el SERVIDOR agrega a una respuesta (servicios, fechas y horas), generados desde los
+    // resultados de las herramientas, nunca por el modelo. Tocar uno envía su `mensaje` como un mensaje
+    // normal del visitante. Una opción cuyo texto o mensaje no cabe se descarta
+    'opciones' => [
+        'max' => 8,
+        'texto_max' => 40,
+        'mensaje_max' => 160,
+        // Días con lugar que se ofrecen cuando el paciente solo quiere ver horarios (se buscan desde
+        // mañana en esta ventana de días)
+        'max_dias' => 5,
+        'dias_busqueda' => 14,
     ],
 
     // Lo que ve el visitante (nunca un error técnico)

@@ -40,6 +40,9 @@ class HerramientasChat
             return ['error' => 'herramienta_desconocida', 'mensaje' => 'Esa herramienta no existe. Solo puedes usar las que tienes disponibles.'];
         }
 
+        // Los botones son de la última consulta: cualquier herramienta los borra y solo las de consulta los fijan
+        $contexto->opciones = [];
+
         try {
             return $herramienta->ejecutar($argumentos, $contexto);
         } catch (\Throwable $e) {

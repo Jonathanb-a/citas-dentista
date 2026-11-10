@@ -73,6 +73,15 @@
                              'rounded-bl-md border border-[#fbd3df] bg-[#fde7ed] text-gray-800': m.rol === 'aviso'
                          }" x-text="m.texto"></div>
 
+                    {{-- Botones que agrega el servidor: tocar uno envía su mensaje como si el visitante lo escribiera --}}
+                    <div x-show="m.opciones && m.opciones.length > 0" style="display: none" role="group" aria-label="Opciones para continuar" class="mt-2 flex max-w-full flex-wrap gap-2">
+                        <template x-for="(o, i) in (m.opciones ?? [])" :key="i">
+                            <button type="button" :disabled="!opcionesActivas(m)" @click="elegir(m, o)"
+                                    class="min-h-11 max-w-full rounded-full border border-[#c03a63] bg-white px-4 py-2 text-left text-sm font-semibold text-[#a13153] hover:bg-[#fde7ed] disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:bg-white transition-[background-color] duration-300 {{ $foco }}"
+                                    x-text="o.texto"></button>
+                        </template>
+                    </div>
+
                     <p x-show="m.rol === 'user' && m.estado === 'error'" style="display: none" class="mt-1 text-xs font-semibold text-[#a13153]">No se envió</p>
 
                     <div x-show="m.rol === 'aviso' && (m.reiniciar || m.recargar || puedeReintentar(m))" style="display: none" class="mt-2 flex flex-wrap gap-2">
@@ -102,6 +111,8 @@
             <div x-show="!hayMensajesDelVisitante && !esperando" style="display: none" class="flex flex-wrap gap-2 pt-1">
                 <button type="button" @click="enviar('Quiero agendar una cita')"
                         class="min-h-11 rounded-full border border-[#c03a63] bg-white px-4 text-sm font-semibold text-[#a13153] hover:bg-[#fde7ed] transition-[background-color] duration-300 {{ $foco }}">Agendar una cita</button>
+                <button type="button" @click="enviar('¿Qué servicios tienen?')"
+                        class="min-h-11 rounded-full border border-[#c03a63] bg-white px-4 text-sm font-semibold text-[#a13153] hover:bg-[#fde7ed] transition-[background-color] duration-300 {{ $foco }}">Ver servicios</button>
                 <button type="button" @click="enviar('¿Qué horarios tienen disponibles?')"
                         class="min-h-11 rounded-full border border-[#c03a63] bg-white px-4 text-sm font-semibold text-[#a13153] hover:bg-[#fde7ed] transition-[background-color] duration-300 {{ $foco }}">Ver horarios</button>
             </div>

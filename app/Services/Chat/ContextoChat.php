@@ -21,6 +21,14 @@ class ContextoChat
     public ?string $respuestaDirecta = null;
 
     /**
+     * Botones {texto, mensaje} que el servidor agrega a la respuesta (ver OpcionesChat). Los fija la
+     * última herramienta de consulta que se ejecutó; nunca vienen del modelo
+     *
+     * @var array<int, array{texto: string, mensaje: string}>
+     */
+    public array $opciones = [];
+
+    /**
      * @param array|null $propuestaVigente datos de la propuesta que el visitante trae firmada de la
      *                                     petición anterior (ya verificada), o null
      */

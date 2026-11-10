@@ -57,6 +57,21 @@ class ChatWidgetTest extends ChatTestCase
         $this->assertStringContainsString('Agenda tu cita', $html);
         $this->assertStringContainsString('Agendar una cita', $html);
         $this->assertStringContainsString('Ver horarios', $html);
+        $this->assertStringContainsString('Ver servicios', $html);
+    }
+
+    public function test_los_botones_de_opciones_se_pintan_como_texto_y_miden_44_px(): void
+    {
+        $this->activarWidget();
+
+        $html = $this->landing();
+
+        $this->assertStringContainsString('x-text="o.texto"', $html);
+        $this->assertStringContainsString('role="group" aria-label="Opciones para continuar"', $html);
+        $this->assertMatchesRegularExpression('/:disabled="!opcionesActivas\(m\)"[^>]*@click="elegir\(m, o\)"[^>]*min-h-11/s', $html);
+        $js = (string) file_get_contents(base_path('resources/js/chat-widget.js'));
+        $this->assertStringContainsString('OPCIONES_MAXIMAS = 8', $js);
+        $this->assertStringContainsString('this.enviar(opcion.mensaje)', $js);   // un botón es un mensaje normal
     }
 
     public function test_el_widget_lleva_el_token_csrf_de_la_sesion(): void

@@ -808,7 +808,7 @@ class ChatAgendarTest extends ChatTestCase
         $this->chat(['mensaje' => 'Hola'])->assertOk();
 
         $this->assertStringNotContainsString('Otro-Paciente', json_encode($this->ultimoResultadoDeHerramienta()));
-        $this->assertSame(['servicios'], array_keys($this->ultimoResultadoDeHerramienta()));
+        $this->assertSame(['servicios', 'botones'], array_keys($this->ultimoResultadoDeHerramienta()));
     }
 
     // ---------- Privacidad ----------

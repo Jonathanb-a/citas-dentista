@@ -331,7 +331,7 @@ ponerlos en el .env local y en las variables de Railway:
 ## Chatbot con IA (paso 1: servicio de IA)
 Pasos: 1 servicio de IA (este apartado), 2 endpoint `POST /chat` (apartado
 siguiente), 3 herramientas de citas (ver horarios, agendar) y 4 botón/widget en la
-landing (los cuatro pasos ya existen; ver "paso 4" para el widget).
+landing (los cuatro pasos ya existen; ver "paso 4" para el widget; el paso 5 añade botones y consultas).
 
 - `App\Services\IA\ProveedorIA` (interfaz): `responder($mensajes, $herramientas,
   $instrucciones)` devuelve una `RespuestaIA` con texto, llamadas a herramienta
@@ -509,8 +509,8 @@ paciente. Código en `Services/Chat/Herramientas/`, registro en `HerramientasCha
   - `listar_servicios`: activos de especialidades activas (los mismos que ve el paciente),
     con id, nombre, especialidad, duración y descripción corta. **Sin precio**: `servicios`
     no tiene esa columna y el sistema no lo maneja
-  - `ver_horarios_libres(servicio_id, fecha)`: espacios libres por `DisponibilidadService`
-    (bloqueos, citas, descansos); máx. 12; solo `hora` y `hora_formato` (el `horario_id`
+  - `ver_horarios_libres(servicio_id, fecha?)`: espacios libres por `DisponibilidadService`
+    (bloqueos, citas, descansos); máx. 8 (paso 5; sin fecha, próximos días); solo `hora` y `hora_formato` (el `horario_id`
     nunca sale)
   - `agendar_cita(servicio_id, fecha, hora, nombre, apellidos, telefono)`: usa `hora` y no
     `horario_id`: el servidor busca el espacio libre y deriva el `horario_id`
@@ -684,6 +684,42 @@ viajan en atributos `data-*` escapados por Blade.
   movimiento reducido, accesibilidad, contraste, solapes y un recorrido completo contra el
   backend real con un Groq falso, incluido agendar una cita). Pendiente: el teclado
   virtual de iOS no se pudo comprobar
+
+## Chatbot con IA (paso 5: listas, botones y solo consultar)
+El asistente puede **solo consultar** (servicios u horarios) sin pedir nombre ni teléfono, y la
+respuesta trae **botones** tocables que arma el servidor.
+
+- **Solo consultar** (`resources/prompts/asistente.md`): lista ordenada en texto, sin pedir datos,
+  y termina ofreciendo agendar; solo sigue el flujo de agendado si el paciente lo acepta o toca
+  una hora. Servicios: siempre `listar_servicios` y lista todos en orden. Horarios sin servicio:
+  primero el horario general y `listar_servicios`; con servicio y sin fecha, `ver_horarios_libres`
+  **sin fecha**; con fecha, los horarios de ese día (todos, en orden; ya no "máximo 3")
+- **`ver_horarios_libres`**: `fecha` es opcional. Sin fecha devuelve `proximos_dias` (hasta 5 días
+  con lugar, buscados desde mañana en 14 días, por `DisponibilidadService`: respeta bloqueos y
+  citas). `chat.agenda.max_horarios` bajó de 12 a 8 (un botón por hora)
+- **Opciones** (`OpcionesChat`, `ContextoChat::$opciones`, `config/chat.php` clave `opciones`): la
+  respuesta `ok:true` trae `opciones: [{texto, mensaje}]`, máx. **8**, generadas por el servidor
+  desde los resultados de las herramientas, **nunca del modelo** (ni de sus argumentos ni de su
+  texto). `listar_servicios` → botón por servicio ("Ver horarios de {servicio}"); días →
+  "lun 16 nov" ("Ver horarios de {servicio} el lunes 16 de noviembre de 2026"); horas →
+  "09:00 AM" ("Quiero agendar {servicio} el {fecha} a las 09:00 AM"). Textos pasan por
+  `DatosParaPrompt` (una línea, sin marcas; texto ≤40 y mensaje ≤160 caracteres; lo que no cabe,
+  parezca instrucción o se repita se descarta). Cada herramienta borra los botones al empezar:
+  valen los de la **última** consulta de la petición; un error no deja botones. El resumen y la
+  confirmación del agendado (texto del servidor) nunca llevan botones. Las opciones no se firman
+  ni entran al historial (un historial con campos de más sigue dando 422)
+- **Widget**: botones bajo el mensaje (`role="group"`, `x-text`, 44 px, mismo estilo de chips).
+  Tocar uno llama a `enviar(mensaje)`: es un mensaje normal (CSRF, historial firmado, límites por
+  IP y tope global; y el agendado sigue exigiendo el "sí" claro: un mensaje con números nunca
+  confirma). Solo están activos los de la última respuesta: **cualquier mensaje más nuevo** (del
+  visitante o un aviso) o una petición en curso los desactiva (siguen visibles). Chip inicial
+  nuevo "Ver servicios". El JS descarta opciones mal formadas y recorta a 8
+- **Pruebas**: `ChatOpcionesTest` (servicios, días, horas, topes, limpieza, instrucciones,
+  consultar sin crear cita ni paciente, botones del servidor y no del modelo, sin botones en
+  resumen/fallos, límites) y `ChatWidgetTest`. Verificado con mutaciones y en navegador
+  (57 comprobaciones nuevas: render, 44 px, teclado Enter/Espacio, desactivado, XSS como texto,
+  tope de 8, 320 px y recorrido real servicios → días → horas → resumen en 390 y 1440 px).
+  Pendiente: validar con el modelo real que sigue las nuevas reglas del prompt
 
 ## Chatbot con IA (paso 3.5: horario general y promociones en las instrucciones)
 El asistente conoce el horario de atención y las promociones vigentes, **sin herramientas

@@ -34,7 +34,7 @@ class ChatService
 
     /**
      * @param array<int, array{rol: string, texto: string}> $historial
-     * @return array{ok: bool, respuesta: string, firma?: string, pendiente?: string|null}
+     * @return array{ok: bool, respuesta: string, firma?: string, pendiente?: string|null, opciones?: array}
      */
     public function responder(string $mensaje, array $historial, ?string $pendiente = null, string $ip = ''): array
     {
@@ -72,7 +72,7 @@ class ChatService
 
                     return $texto === ''
                         ? $this->fallo((string) config('ia.mensaje_error'))
-                        : $this->exito($texto, $contexto);
+                        : $this->exito($texto, $contexto, conOpciones: true);
                 }
 
                 // comoMensaje() conserva los datos del proveedor (p. ej. las firmas de Gemini)
@@ -114,7 +114,7 @@ class ChatService
         return $transcurrido + (int) config('ia.timeout') <= $maximo;
     }
 
-    private function exito(string $texto, ContextoChat $contexto): array
+    private function exito(string $texto, ContextoChat $contexto, bool $conOpciones = false): array
     {
         // Lo que vuelve en el historial debe caber en la validación
         $texto = Str::limit($texto, (int) config('chat.max_caracteres_respuesta'), '…', preserveWords: true);
@@ -125,6 +125,9 @@ class ChatService
             'firma' => $this->firmas->firmar($texto),
             // La propuesta solo sirve para el turno siguiente (va atada al resumen que acaba de verse)
             'pendiente' => $contexto->propuestaNueva,
+            // Botones armados por el servidor a partir de las herramientas. Solo acompañan un texto que
+            // escribió el modelo: el resumen y la confirmación de la cita no llevan botones
+            'opciones' => $conOpciones ? $contexto->opciones : [],
         ];
     }
 

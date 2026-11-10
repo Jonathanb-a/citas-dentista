@@ -5,6 +5,7 @@ namespace App\Services\Chat\Herramientas;
 use App\Models\Servicio;
 use App\Services\Chat\ContextoChat;
 use App\Services\Chat\DatosParaPrompt;
+use App\Services\Chat\OpcionesChat;
 use App\Services\IA\Datos\HerramientaIA;
 
 /** Servicios que el paciente puede agendar (activos, de especialidades activas). Sin precio: el sistema no lo maneja */
@@ -15,11 +16,11 @@ class ListarServicios implements HerramientaChat
         return new HerramientaIA(
             'listar_servicios',
             'Lista los servicios del consultorio que se pueden agendar, con su id, especialidad y duración en minutos. '
-            . 'No incluye precios. Úsala si no tienes claro qué servicio quiere el paciente o necesitas un id.',
+            . 'No incluye precios. Úsala siempre que el paciente pregunte qué servicios hay, o si no tienes claro qué servicio quiere o necesitas un id.',
         );
     }
 
-    public function __construct(private DatosParaPrompt $datos) {}
+    public function __construct(private DatosParaPrompt $datos, private OpcionesChat $opciones) {}
 
     public function ejecutar(array $argumentos, ContextoChat $contexto): array
     {
@@ -52,6 +53,13 @@ class ListarServicios implements HerramientaChat
             ];
         }
 
-        return ['servicios' => $lista];
+        // El sistema pone un botón por servicio (los primeros) debajo de la respuesta
+        $contexto->opciones = $this->opciones->deServicios($lista);
+
+        return [
+            'servicios' => $lista,
+            'botones' => 'El sistema mostrará debajo de tu respuesta un botón por servicio (los primeros '
+                . (int) config('chat.opciones.max') . '). Lista los servicios en texto, en este orden, sin escribir botones, y ofrece agendar.',
+        ];
     }
 }
