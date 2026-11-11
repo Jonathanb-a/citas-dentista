@@ -8,6 +8,19 @@
     <div data-aparecer class="text-center mb-12 md:mb-16">
         <h2 class="font-bold text-gray-800 text-3xl md:text-5xl">OPINIONES DE PACIENTES</h2>
         <p class="text-gray-600 text-sm md:text-base mt-3">Lo que nos compartieron pacientes de la clínica, con su autorización.</p>
+        {{-- Promedio de las opiniones de pacientes aprobadas (solo con el mínimo configurado) --}}
+        @if(!empty($promedioTestimonios))
+            @php $promedioTexto = number_format($promedioTestimonios, 1, ',', '.'); @endphp
+            <p class="mt-5 inline-flex flex-wrap items-center justify-center gap-2 rounded-full bg-white px-5 py-2 shadow-sm text-sm text-gray-700"
+               role="img" aria-label="Calificación promedio: {{ $promedioTexto }} de 5, según {{ $totalTestimonios }} {{ $totalTestimonios === 1 ? 'opinión' : 'opiniones' }}">
+                <span class="flex gap-0.5 text-[#d75078]" aria-hidden="true">
+                    @for($estrella = 1; $estrella <= 5; $estrella++)
+                        <svg class="h-5 w-5 {{ $estrella <= round($promedioTestimonios) ? '' : 'text-gray-300' }}" viewBox="0 0 24 24" fill="currentColor"><path d="M12 3.5l2.6 5.3 5.9.9-4.3 4.1 1 5.8-5.2-2.7-5.2 2.7 1-5.8-4.3-4.1 5.9-.9z"/></svg>
+                    @endfor
+                </span>
+                <span aria-hidden="true"><strong class="font-bold text-gray-800">{{ $promedioTexto }}</strong> de 5 · {{ $totalTestimonios }} {{ $totalTestimonios === 1 ? 'opinión' : 'opiniones' }}</span>
+            </p>
+        @endif
     </div>
 
     <ul class="flex flex-wrap justify-center gap-6">

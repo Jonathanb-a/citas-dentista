@@ -91,6 +91,11 @@ class User extends Authenticatable implements MustVerifyEmail
      * cuenta. Para ellos la confirmación de la clínica (que les llama) cuenta como la suya.
      * Si la clínica le pone su correo real, deja de serlo y confirma como cualquier paciente.
      */
+    public function testimonio()
+    {
+        return $this->hasOne(Testimonio::class, 'paciente_id');
+    }
+
     public function esDeChat(): bool
     {
         return str_ends_with(strtolower((string) $this->email), '@' . config('chat.agenda.correo_dominio'));

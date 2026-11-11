@@ -12,6 +12,8 @@ use App\Http\Controllers\Admin\AnuncioController;
 use App\Http\Controllers\Admin\LandingContenidoController;
 use App\Http\Controllers\Admin\LandingGaleriaController;
 use App\Http\Controllers\Admin\LandingTestimoniosController;
+use App\Http\Controllers\Admin\TestimonioController as AdminTestimonioController;
+use App\Http\Controllers\Paciente\TestimonioController as PacienteTestimonioController;
 use App\Http\Controllers\LandingController;
 use App\Http\Controllers\Admin\CitaController as AdminCitaController;
 use App\Http\Controllers\Admin\PacienteController;
@@ -115,6 +117,14 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->grou
     Route::patch('/landing/opiniones/{item}/subir', [LandingTestimoniosController::class, 'subir'])->where('item', '[0-9]+')->name('landing.testimonios.subir');
     Route::patch('/landing/opiniones/{item}/bajar', [LandingTestimoniosController::class, 'bajar'])->where('item', '[0-9]+')->name('landing.testimonios.bajar');
 
+    // Testimonios de pacientes con cuenta: moderación (aprobar, ocultar, restaurar, destacar y eliminar)
+    Route::get('/testimonios', [AdminTestimonioController::class, 'index'])->name('testimonios.index');
+    Route::patch('/testimonios/{id}/aprobar', [AdminTestimonioController::class, 'aprobar'])->whereNumber('id')->name('testimonios.aprobar');
+    Route::patch('/testimonios/{id}/ocultar', [AdminTestimonioController::class, 'ocultar'])->whereNumber('id')->name('testimonios.ocultar');
+    Route::patch('/testimonios/{id}/restaurar', [AdminTestimonioController::class, 'restaurar'])->whereNumber('id')->name('testimonios.restaurar');
+    Route::patch('/testimonios/{id}/destacar', [AdminTestimonioController::class, 'destacar'])->whereNumber('id')->name('testimonios.destacar');
+    Route::delete('/testimonios/{id}', [AdminTestimonioController::class, 'destroy'])->whereNumber('id')->name('testimonios.destroy');
+
     // Landing page: anuncios y promociones
     Route::get('/anuncios', [AnuncioController::class, 'index'])->name('anuncios.index');
     Route::get('/anuncios/crear', [AnuncioController::class, 'create'])->name('anuncios.create');
@@ -184,6 +194,14 @@ Route::middleware(['auth', 'role:paciente'])->prefix('paciente')->name('paciente
     Route::get('/perfil', [PerfilController::class, 'index'])->name('perfil.index');
     Route::put('/perfil', [PerfilController::class, 'actualizarDatos'])->name('perfil.datos');
     Route::put('/perfil/password', [PerfilController::class, 'cambiarPassword'])->name('perfil.password');
+
+    // Mi opinión: un testimonio por paciente (crear, editar y borrar el propio), con límite por usuario
+    Route::get('/testimonio', [PacienteTestimonioController::class, 'index'])->name('testimonio.index');
+    Route::middleware('throttle:testimonios')->group(function () {
+        Route::post('/testimonio', [PacienteTestimonioController::class, 'store'])->name('testimonio.store');
+        Route::put('/testimonio', [PacienteTestimonioController::class, 'update'])->name('testimonio.update');
+        Route::delete('/testimonio', [PacienteTestimonioController::class, 'destroy'])->name('testimonio.destroy');
+    });
 
     // Citas
     Route::get('/citas', [CitaController::class, 'index'])->name('citas.index');

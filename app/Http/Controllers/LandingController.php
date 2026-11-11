@@ -7,6 +7,7 @@ use App\Models\Especialidad;
 use App\Services\Chat\ChatActivo;
 use App\Services\LandingColeccionService;
 use App\Services\LandingContenidoService;
+use App\Services\TestimonioService;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\View;
 
@@ -14,7 +15,7 @@ class LandingController extends Controller
 {
     const MAX_ANUNCIOS = 8;
 
-    public function index(LandingContenidoService $landing, LandingColeccionService $colecciones)
+    public function index(LandingContenidoService $landing, LandingColeccionService $colecciones, TestimonioService $testimonioService)
     {
         $anuncios = collect();
 
@@ -46,7 +47,16 @@ class LandingController extends Controller
 
         // Opiniones de pacientes: solo las que tienen la autorización marcada. Sin ninguna
         // (o si la lectura falla) la sección no se muestra
-        $testimonios = array_values(array_filter($colecciones->items('testimonios'), fn ($opinion) => $opinion['autorizado'] === true));
+        $manuales = array_values(array_filter($colecciones->items('testimonios'), fn ($opinion) => $opinion['autorizado'] === true));
+
+        // Testimonios de pacientes con cuenta: solo los APROBADOS (destacados primero). Conviven con
+        // las opiniones manuales; el promedio de estrellas cuenta solo los de pacientes
+        $deClientes = $testimonioService->paraLanding();
+        $destacados = array_values(array_filter($deClientes['items'], fn ($t) => $t['destacado']));
+        $recientes = array_values(array_filter($deClientes['items'], fn ($t) => !$t['destacado']));
+        $testimonios = array_slice(array_merge($destacados, $manuales, $recientes), 0, (int) config('testimonios.max_landing'));
+        $promedioTestimonios = $deClientes['promedio'];
+        $totalTestimonios = $deClientes['total'];
 
         // Widget de chat: solo con el chat activo y la key del proveedor puesta; sin eso la landing
         // es idéntica a la original. Nunca debe tumbar la landing
@@ -69,6 +79,6 @@ class LandingController extends Controller
         ]);
         View::share('navegacion', $navegacion);
 
-        return view('welcome', compact('anuncios', 'tratamientos', 'landing', 'galeria', 'testimonios', 'chatActivo'));
+        return view('welcome', compact('anuncios', 'tratamientos', 'landing', 'galeria', 'testimonios', 'promedioTestimonios', 'totalTestimonios', 'chatActivo'));
     }
 }

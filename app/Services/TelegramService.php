@@ -67,6 +67,25 @@ class TelegramService
         $this->seguro(fn () => $this->avisar("⏰ Cita liberada: el paciente no confirmó a tiempo\n" . $this->detalle($cita)));
     }
 
+    /**
+     * Testimonio nuevo o editado de un paciente. Sin el texto ni el apellido: solo nombre de pila,
+     * estrellas y que está pendiente de revisión (la doctora lo lee en el panel)
+     */
+    public function testimonioRecibido(\App\Models\Testimonio $testimonio, bool $editado = false): void
+    {
+        $this->seguro(function () use ($testimonio, $editado) {
+            $testimonio->loadMissing('paciente');
+            $estrellas = max(1, min(5, (int) $testimonio->calificacion));
+
+            $this->avisar(
+                ($editado ? "✏️ Testimonio editado\n" : "⭐ Nuevo testimonio\n")
+                . 'Paciente: ' . trim((string) $testimonio->paciente->name) . "\n"
+                . 'Calificación: ' . str_repeat('★', $estrellas) . str_repeat('☆', 5 - $estrellas) . " ($estrellas/5)\n"
+                . 'Estado: pendiente de revisión'
+            );
+        });
+    }
+
     // ---------- Envío ----------
 
     /** Manda el mensaje a cada chat configurado. Nunca lanza excepciones. */

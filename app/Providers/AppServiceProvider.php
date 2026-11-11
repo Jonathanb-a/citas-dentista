@@ -30,6 +30,10 @@ class AppServiceProvider extends ServiceProvider
             URL::forceScheme('https');
         }
 
+        // Testimonios: crear, editar y borrar, por usuario y por hora (al pasarse, 429)
+        RateLimiter::for('testimonios', fn (Request $request) => Limit::perHour((int) config('testimonios.limite_hora'))
+            ->by('testimonio:' . ($request->user()?->id ?? $request->ip())));
+
         // Chat público: por IP, mensajes por minuto y por día (ventanas móviles). Al pasarse, 429 con
         // un mensaje listo para mostrar. La IP es la última entrada de X-Forwarded-For (la que agrega
         // el proxy de Railway), que el visitante no puede falsificar

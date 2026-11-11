@@ -219,6 +219,61 @@ ponerlos en el .env local y en las variables de Railway:
   (`imagenes` en la colección) y con campos `texto`, `calificacion` o
   `casilla`; los avisos de máximo y mínimo van en `textos` de cada colección
 
+## Testimonios de pacientes (módulo "Testimonios")
+Opiniones de pacientes con cuenta, moderadas por la doctora. **Conviven** con las opiniones
+manuales de la pestaña "Opiniones" de Landing Page (`landing_items`): la landing las une en
+la misma sección `#testimonios`; el promedio de estrellas solo cuenta las de pacientes.
+
+- **Quién puede opinar** (`TestimonioService::puedeOpinar`, el único lugar que lo decide; la
+  política y los controladores lo usan): rol paciente, cuenta activa, **no del chat**
+  (`esDeChat()`) y **al menos una cita `atendida`**. Un testimonio por paciente (índice único
+  en `testimonios.paciente_id`; ante una carrera `crear()` devuelve null). Sin cita atendida el
+  paciente ve la explicación en lugar del formulario
+- **Datos** (`testimonios`, modelo `Testimonio`): calificación 1-5, texto de **20 a 300**
+  caracteres (`config/testimonios.php`), `autorizado` (la casilla "Autorizo que se muestre mi
+  nombre y mi opinión en la página", obligatoria), `estado` (pendiente | aprobado | oculto),
+  `destacado` y `aprobado_en`. **`estado` y `destacado` no son asignables en masa**: solo los
+  cambia `TestimonioService` (cuidado: `update(['destacado' => ...])` se ignora). El nombre
+  público sale de la cuenta ("María G.": nombre de pila e inicial del apellido); no se guarda aparte
+- **Estados**: crear → pendiente. **Editar siempre vuelve a pendiente** (también uno oculto) y
+  quita lo destacado. La doctora: aprobar (solo desde pendiente), ocultar (de pendiente o
+  aprobado; quita lo destacado), restaurar (oculto → **pendiente**, no se publica directo),
+  destacar (solo aprobados, máx. `TESTIMONIOS_DESTACADOS_MAX`, 6; el conteo y el guardado van en
+  una transacción) y eliminar (**definitivo**; el paciente también puede borrar el suyo).
+  Borrar la cuenta del paciente borra su testimonio (cascada)
+- **Lo que ve el paciente** (menú "Mi opinión", `Paciente\TestimonioController`): En revisión,
+  Publicado o **No publicado** (un oculto nunca se le anuncia como "oculto"). Advertencia junto
+  al formulario: no escribir datos médicos ni de contacto; **sin filtros automáticos de
+  contenido, la doctora revisa a mano**. No hay correo al paciente (Resend aún no entrega a
+  pacientes reales): el estado se ve en su panel
+- **Panel de la doctora** (menú "Testimonios", `Admin\TestimonioController`, solo `role:admin`):
+  filtros Pendientes / Aprobados / Ocultos con contador (por defecto pendientes), tabla en
+  escritorio y tarjetas en móvil, nombre completo y "se verá como"
+- **Landing** (`TestimonioService::paraLanding`, `LandingController`): solo APROBADOS; orden:
+  destacados de pacientes → manuales → pacientes más recientes; **máx. 12 en total**
+  (`testimonios.max_landing`). El promedio cuenta TODOS los aprobados (no solo los que caben),
+  con un decimal y coma ("4,4 de 5 · 5 opiniones"), y solo se muestra desde
+  `TESTIMONIOS_PROMEDIO_MINIMO` aprobados (3). **Sin aprobados ni manuales la landing es
+  idéntica al fixture** (hay pruebas con pendientes, ocultos y con la tabla caída). Si la
+  consulta falla, la landing se ve sin testimonios de pacientes (no 500)
+- **Seguridad**: todo texto se escapa al mostrarse (`{{ }}`, nunca HTML). `limpiarTexto()`
+  (`DatosParaPrompt::limpiar`) quita invisibles, enlaces y marcado (`< > { } [ ] | \``) y deja una
+  sola línea **antes** de validar la longitud (los 20 caracteres son de contenido). Política
+  `TestimonioPolicy` (un paciente solo toca el suyo; crear exige elegibilidad). Límite por usuario
+  `throttle:testimonios`: **5 envíos por hora** entre crear, editar y borrar
+  (`TESTIMONIOS_LIMITE_HORA`; 429 al pasarse). La validación pone un tope de 1-5 con `Rule::in` y
+  `accepted` para la casilla
+- **Telegram** (`TelegramService::testimonioRecibido`, en segundo plano): "Nuevo testimonio" o
+  "Testimonio editado", **solo nombre de pila, estrellas y "pendiente de revisión"** (sin texto
+  ni apellido). Moderar o borrar no avisa
+- **Logs**: nunca el texto ni el nombre; solo la clase de la excepción
+- **Pruebas** (`tests/Feature/Testimonios/*`, 67): elegibilidad, un testimonio por paciente,
+  validación y limpieza, estados, política, límite, landing (fixture, orden, tope, promedio,
+  convivencia con manuales), XSS en landing/admin/paciente, Telegram y logs. Verificado quitando a
+  propósito cada defensa (la prueba del tope de 12 con manuales salió de ahí) y en navegador
+  (39 comprobaciones en 390 y 1440 px: formulario, errores, teclado, moderación y landing).
+  Pendiente: el `confirm()` del navegador en Eliminar es básico; se puede cambiar por un modal
+
 ## Imágenes subidas (ImagenService)
 - `App\Services\ImagenService` es el único camino para subir imágenes
   (anuncios hoy; landing editable, transformaciones u otros módulos
