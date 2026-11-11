@@ -78,25 +78,52 @@ ponerlos en el .env local y en las variables de Railway:
     CONSULTORIO_CORREO      (vacío: no se imprime)
 
 ## Correo
-- Se envía con Resend (paquete resend/resend-laravel) por su API HTTPS,
-  porque Railway bloquea el SMTP saliente
-- Variables en Railway:
+**Railway bloquea el SMTP saliente** (conectar a smtp.gmail.com:465 da timeout), así que el correo
+sale por la API HTTPS de Resend (`resend/resend-laravel`, que trae `resend/resend-php`).
+
+- **Variables en Railway** (lo primero que hay que poner; sin `MAIL_MAILER=resend` Laravel sigue
+  intentando SMTP o escribe en el log y ningún correo sale):
 
       MAIL_MAILER=resend
-      RESEND_API_KEY=re_...            (del panel de Resend)
+      RESEND_API_KEY=re_...                     (del panel de Resend)
       MAIL_FROM_ADDRESS=onboarding@resend.dev   (hasta tener dominio verificado)
       MAIL_FROM_NAME=Dentissa
 
+- **Remitente**: siempre por `.env` (`MAIL_FROM_ADDRESS`). Sin dominio verificado en Resend solo
+  sirve `onboarding@resend.dev` y **solo entrega al correo del dueño de la cuenta de Resend**
+  (ver "Pendiente antes de entregar"). Con dominio verificado se cambia a una dirección propia
+  (ej. citas@dominio.mx) sin tocar código
+- **Qué correos salen** (solo dos, notificaciones nativas de Laravel que usan el mailer por
+  defecto): verificación de correo (registro, reenviar y cambio de correo en Mi perfil) y el
+  enlace de "Olvidé mi contraseña". No hay `Mail::` ni mailables propios; los testimonios y las
+  citas no mandan correo (los avisos a la clínica van por Telegram)
+- **Local y pruebas**: `.env.example` trae `MAIL_MAILER=log` (los correos se escriben en
+  `storage/logs/laravel.log` y nunca salen). `phpunit.xml` fija `MAIL_MAILER=array`, deja
+  `RESEND_API_KEY` vacía y un remitente ficticio: aunque el .env local tenga clave, las pruebas no
+  llaman a Resend (el cliente de Resend va directo por Guzzle, así que `Http::fake()` no lo
+  interceptaría: por eso se prueba con el mailer `array`, `Mail::fake` o un transporte falso)
+- **Clave y tiempos** (`App\Services\CorreoResend`, registrado con `Mail::extend('resend')` en
+  `AppServiceProvider`): la clave se lee de `config('services.resend.key')`, nunca de `env()`
+  en el código. El cliente de Resend del paquete no trae tiempo límite; el nuestro lleva **5 s en
+  total y 3 s para conectar** (`mail.mailers.resend.timeout` y `connect_timeout`; .env
+  `MAIL_RESEND_TIMEOUT` y `MAIL_RESEND_CONNECT_TIMEOUT`). Si falta `RESEND_API_KEY` con
+  `MAIL_MAILER=resend`, el log dice una vez por proceso "falta RESEND_API_KEY" (sin datos) y el
+  envío falla con una excepción que ya atrapan los puntos de envío
 - `RESEND_ROUTES` está apagado por defecto en config/resend.php: el paquete
   expone POST /resend/webhook y el proyecto no usa webhooks
 - **Un fallo de correo nunca debe tumbar una operación del usuario.** Los
   cuatro puntos de envío están protegidos: registro, reenviar verificación,
   cambio de correo en Mi perfil y "Olvidé mi contraseña". Para la
   verificación se usa `User::enviarVerificacion()`, que registra el error
-  en el log y devuelve false en vez de lanzar la excepción
-- El mailer SMTP tiene timeout de 5 s: el error "Maximum execution time
-  of 30 seconds exceeded" es un error fatal de PHP que ningún try/catch
+  en el log y devuelve false en vez de lanzar la excepción. **El log solo lleva la clase de la
+  excepción** (`TransportException`…): ni el mensaje, que puede traer la dirección de correo,
+  ni el id del usuario ni el contenido
+- El mailer SMTP (solo si algún día se vuelve a él) tiene timeout de 5 s: el error "Maximum
+  execution time of 30 seconds exceeded" es un error fatal de PHP que ningún try/catch
   atrapa, así que la protección real es no quedarse colgado
+- **Pruebas**: `CorreoFallidoTest` (los cuatro puntos con el correo caído) y `CorreoResendTest`
+  (mailer array sin red, remitente por config, timeouts 5/3 y ajustables, aviso de clave una vez,
+  logs sin direcciones ni contenido). Verificado quitando a propósito cada defensa
 
 ## Anuncios y promociones de la landing
 - Los edita la doctora en el admin, entrada "Landing Page" del menú

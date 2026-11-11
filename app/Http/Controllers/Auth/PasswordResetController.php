@@ -31,8 +31,9 @@ class PasswordResetController extends Controller
         try {
             Password::sendResetLink($request->only('email'));
         } catch (\Throwable $error) {
+            // Solo la clase del error: su mensaje puede traer la dirección de correo
             Log::error('No se pudo enviar el enlace de recuperación de contraseña.', [
-                'error' => $error->getMessage(),
+                'error' => class_basename($error),
             ]);
         }
 

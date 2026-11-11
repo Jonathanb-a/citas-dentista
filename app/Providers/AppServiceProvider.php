@@ -2,10 +2,12 @@
 
 namespace App\Providers;
 
+use App\Services\CorreoResend;
 use App\Services\IA\ProveedorIA;
 use App\Services\IA\ProveedorIAFactory;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Facades\URL;
 use Illuminate\Support\ServiceProvider;
@@ -18,6 +20,8 @@ class AppServiceProvider extends ServiceProvider
     public function register(): void
     {
         // El proveedor de IA lo elige IA_PROVEEDOR (config/ia.php); no es singleton para respetar la config de cada petición
+        // Una sola instancia: el aviso de 'falta la clave' sale una vez por proceso
+        $this->app->singleton(CorreoResend::class);
         $this->app->bind(ProveedorIA::class, fn ($app) => $app->make(ProveedorIAFactory::class)->crear());
     }
 
@@ -29,6 +33,9 @@ class AppServiceProvider extends ServiceProvider
         if ($this->app->environment('production')) {
             URL::forceScheme('https');
         }
+
+        // Correo por la API de Resend con tiempos límite (el transporte del paquete no los trae)
+        Mail::extend('resend', fn (array $config) => $this->app->make(CorreoResend::class)->transporte($config));
 
         // Testimonios: crear, editar y borrar, por usuario y por hora (al pasarse, 429)
         RateLimiter::for('testimonios', fn (Request $request) => Limit::perHour((int) config('testimonios.limite_hora'))

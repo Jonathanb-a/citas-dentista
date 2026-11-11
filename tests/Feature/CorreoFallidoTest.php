@@ -87,7 +87,7 @@ class CorreoFallidoTest extends TestCase
             ->assertSee('Verifica tu correo electrónico');
 
         Log::shouldHaveReceived('error')
-            ->withArgs(fn ($mensaje, $contexto) => str_contains($mensaje, 'verificación') && $contexto['usuario_id'] === $usuario->id)
+            ->withArgs(fn ($mensaje, $contexto) => str_contains($mensaje, 'verificación') && $contexto === ['error' => 'TransportException'])
             ->once();
     }
 

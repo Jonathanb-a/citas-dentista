@@ -66,8 +66,12 @@ return [
 
         // Envío por la API HTTPS de Resend (Railway bloquea el SMTP saliente).
         // La clave se lee de RESEND_API_KEY (config/resend.php y config/services.php).
+        // Sin límite, una conexión colgada dejaría la petición del usuario esperando: el cliente
+        // lleva 5 s en total y 3 s para conectar (ver App\Services\CorreoResend).
         'resend' => [
             'transport' => 'resend',
+            'timeout' => (float) env('MAIL_RESEND_TIMEOUT', 5),
+            'connect_timeout' => (float) env('MAIL_RESEND_CONNECT_TIMEOUT', 3),
         ],
 
         'sendmail' => [

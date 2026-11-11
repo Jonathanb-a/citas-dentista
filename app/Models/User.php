@@ -64,9 +64,9 @@ class User extends Authenticatable implements MustVerifyEmail
 
             return true;
         } catch (\Throwable $error) {
+            // Solo la clase del error: su mensaje puede traer la dirección de correo
             Log::error('No se pudo enviar el correo de verificación.', [
-                'usuario_id' => $this->id,
-                'error' => $error->getMessage(),
+                'error' => class_basename($error),
             ]);
 
             return false;
