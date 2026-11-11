@@ -29,7 +29,7 @@ Entorno local: Laragon. Despliegue: Railway.
   diente marcado; sin registro = diente sano. Estados y colores viven en
   Odontograma::ESTADOS (única fuente de verdad de validación, leyenda,
   resumen y modal)
-- Fase 3 (pendiente): notas de evolución y dentición infantil
+- Fase 3 (pendiente): dentición infantil (las notas de evolución ya existen, solo para la clínica)
   - Los números FDI temporales (51-55, 61-65, 71-75, 81-85) ya caben en
     `odontograma.numero_diente` sin migración: solo hay que ampliar
     Odontograma::numerosValidos() y dibujar 20 dientes
@@ -39,14 +39,35 @@ Entorno local: Laragon. Despliegue: Railway.
     interruptor que alterne entre una y otra
   - La clínica sí atiende niños (servicio "Ortodoncia maxilar")
 
-## Qué ve el paciente de su expediente
-En "Mi perfil" el paciente consulta su expediente en solo lectura, pero
-NO se le muestran `notas_doctora` ni `observaciones`: son el espacio de
-trabajo interno de la doctora y no se puede garantizar qué escriba ahí.
-Lo que el paciente necesita saber va en `diagnostico`, `plan_tratamiento`
-y las `indicaciones` de cada nota de evolución.
-Si algún día hace falta un texto dirigido al paciente, se crea un campo
-nuevo con ese nombre explícito en vez de destapar estos dos.
+## El paciente NO ve su expediente
+El paciente **no tiene acceso al expediente clínico**: ni a los antecedentes, hábitos, diagnóstico,
+plan de tratamiento, odontograma y notas de evolución, ni a `notas_doctora` y `observaciones` (el
+espacio de trabajo interno de la doctora, donde no se puede garantizar qué escriba). Solo la doctora
+(admin) lo ve y lo edita. **La asistente tampoco tiene acceso** (su único permiso sobre pacientes es
+restablecer contraseña). Nada se borró: las tablas `expedientes`, `odontograma` y `notas_evolucion` y
+sus datos siguen igual; solo se quitó el acceso del paciente.
+
+- "Mi perfil" tiene solo las pestañas **Mis datos** y **Seguridad**. El paciente edita ahí su
+  nombre, apellidos, correo, teléfono, sexo, fecha de nacimiento y contraseña (viven en `users`);
+  nunca escribió nada del expediente. `Paciente\PerfilController` y `Paciente\DashboardController`
+  **no cargan** el expediente, el odontograma ni las notas (una prueba vigila que ni siquiera se
+  consulten esas tablas). El dashboard ya no tiene el bloque "Notas de tu doctora"
+- No hay rutas del paciente para el expediente. Las del expediente son de la doctora
+  (`/admin/pacientes/{id}` y sus `expediente`, `odontograma`, `imprimir` y `update`, con
+  `role:admin`): un paciente o la asistente reciben **403** con cualquier id, el suyo o el de otro
+- El registro, el agendado manual y el chat siguen creando un expediente **vacío** por paciente
+  (la doctora lo llena en consulta)
+- Las pantallas de login y registro ya no prometen "Tu expediente a la mano": la tarjeta dice
+  "Tu cuenta, tus citas"
+- **Posible mejora futura**: el paciente dejó de ver qué se le hizo, las indicaciones para casa y la
+  próxima cita sugerida (antes en "Mis consultas"). Si hace falta, se crea un campo nuevo y
+  explícito **"indicaciones para el paciente"** en la nota de evolución (que la doctora escribe
+  pensando en que el paciente lo lea) y solo eso se muestra; no se destapan `observaciones`,
+  `notas_doctora` ni el resto del expediente
+- **Pruebas**: `ExpedienteSinAccesoPacienteTest` (Mi perfil y dashboard sin ningún dato del
+  expediente, sin consultar sus tablas, login y registro, 403 para el paciente —con su id y con el
+  de otro— y para la asistente, redirección al login sin sesión, la doctora sigue viendo y editando,
+  y los datos siguen existiendo). Verificado quitando a propósito cada defensa
 
 ## ⚠️ Pendiente antes de entregar
 

@@ -39,7 +39,7 @@
             'M8 2v4M16 2v4M3 10h18M5 4h14a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2Z'],
         ['Confirma o cancela', 'Cuando la clínica acepta tu cita, confirma tu asistencia o cancélala desde tu cuenta.',
             'M9 12l2 2 4-4M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z'],
-        ['Tu expediente a la mano', 'Consulta tu diagnóstico y plan de tratamiento en "Mi perfil".',
+        ['Tu cuenta, tus citas', 'Consulta, confirma o cancela tus citas y mantén tus datos al día desde "Mi perfil".',
             'M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2M9 5a2 2 0 0 0 2 2h2a2 2 0 0 0 2-2M9 5a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2M9 13h6M9 17h4'],
     ];
 

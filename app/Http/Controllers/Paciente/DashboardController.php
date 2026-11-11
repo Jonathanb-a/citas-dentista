@@ -4,7 +4,6 @@ namespace App\Http\Controllers\Paciente;
 
 use App\Http\Controllers\Controller;
 use App\Models\Cita;
-use App\Models\Expediente;
 use Carbon\Carbon;
 
 class DashboardController extends Controller
@@ -32,15 +31,11 @@ class DashboardController extends Controller
         $totalAtendidas = Cita::where('paciente_id', $pacienteId)
             ->where('status', 'atendida')->count();
 
-        // Expediente (para mostrar notas de la doctora)
-        $expediente = Expediente::where('paciente_id', $pacienteId)->first();
-
         return view('paciente.dashboard', compact(
             'proximaCita',
             'totalPendientes',
             'totalConfirmadas',
-            'totalAtendidas',
-            'expediente'
+            'totalAtendidas'
         ));
     }
 }

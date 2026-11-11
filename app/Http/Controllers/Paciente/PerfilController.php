@@ -3,7 +3,6 @@
 namespace App\Http\Controllers\Paciente;
 
 use App\Http\Controllers\Controller;
-use App\Models\Expediente;
 use App\Services\PasswordTemporalService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
@@ -12,16 +11,10 @@ use Illuminate\Validation\Rule;
 
 class PerfilController extends Controller
 {
-    // Datos, seguridad y expediente en solo lectura
+    // Datos y seguridad. El expediente clínico NO se carga aquí: el paciente no lo ve (ver CLAUDE.md)
     public function index()
     {
-        $paciente = auth()->user()->load([
-            'expediente.odontograma',
-            'notasEvolucion' => function ($q) {
-                $q->orderBy('created_at', 'desc');
-            },
-            'notasEvolucion.cita.servicio.especialidad',
-        ]);
+        $paciente = auth()->user();
 
         return view('paciente.perfil.index', compact('paciente'));
     }

@@ -12,7 +12,7 @@
     {{-- Header --}}
     <div class="mb-8">
         <h1 class="font-bold text-gray-800 text-2xl">Mi perfil</h1>
-        <p class="font-light text-gray-400 text-sm mt-1">Tus datos, tu contraseña y tu expediente clínico</p>
+        <p class="font-light text-gray-400 text-sm mt-1">Tus datos y tu contraseña</p>
     </div>
 
     {{-- Pestañas --}}
@@ -20,7 +20,6 @@
         @foreach([
             'datos' => 'Mis datos',
             'seguridad' => 'Seguridad',
-            'expediente' => 'Mi expediente',
         ] as $clave => $titulo)
             <button type="button" @click="pestana = '{{ $clave }}'"
                     :class="pestana === '{{ $clave }}' ? 'bg-[#fde7ed] text-[#d75078]' : 'text-gray-400 hover:text-[#d75078] hover:bg-[#FFF6F6]'"
@@ -152,10 +151,6 @@
         </form>
     </div>
 
-    {{-- Mi expediente --}}
-    <div x-show="pestana === 'expediente'" x-cloak>
-        @include('paciente.perfil.partials.expediente')
-    </div>
 
 </div>
 

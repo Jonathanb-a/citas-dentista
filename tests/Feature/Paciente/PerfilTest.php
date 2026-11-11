@@ -2,12 +2,6 @@
 
 namespace Tests\Feature\Paciente;
 
-use App\Models\Cita;
-use App\Models\Especialidad;
-use App\Models\Expediente;
-use App\Models\Horario;
-use App\Models\NotaEvolucion;
-use App\Models\Servicio;
 use App\Models\User;
 use Illuminate\Auth\Notifications\VerifyEmail;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -58,7 +52,8 @@ class PerfilTest extends TestCase
             ->assertSee('Mi perfil')
             ->assertSee('Mis datos')
             ->assertSee('Seguridad')
-            ->assertSee('Mi expediente')
+            ->assertDontSee('Mi expediente')
+            ->assertDontSee('expediente clínico')
             ->assertSee('maria@correo.com');
 
         $this->actingAs($paciente)->get(route('paciente.dashboard'))
@@ -206,64 +201,6 @@ class PerfilTest extends TestCase
         // Sigue dentro: la sesión actual no se cerró
         $this->assertAuthenticatedAs($paciente->fresh());
         $this->get(route('paciente.perfil.index'))->assertOk();
-    }
-
-    public function test_ve_su_expediente_pero_no_las_notas_internas_de_la_doctora(): void
-    {
-        $doctora = $this->crearUsuario('admin', ['name' => 'Doctora', 'apellidos' => 'Ramírez']);
-        $paciente = $this->crearUsuario('paciente', ['sexo' => 'femenino']);
-
-        $expediente = Expediente::create([
-            'paciente_id' => $paciente->id,
-            'alergias' => 'Penicilina',
-            'diagnostico' => 'Caries en 36',
-            'plan_tratamiento' => 'Resina en 36',
-            'bruxismo' => true,
-            'notas_doctora' => 'SECRETO: paciente muy ansiosa, explicar todo dos veces.',
-            'observaciones' => 'PRIVADO: suele llegar tarde.',
-        ]);
-        $expediente->odontograma()->create([
-            'numero_diente' => 36,
-            'estado' => 'caries',
-            'nota' => 'Cara oclusal',
-            'actualizado_por' => $doctora->id,
-        ]);
-
-        $especialidad = Especialidad::create(['nombre' => 'Odontología General']);
-        $servicio = Servicio::create(['especialidad_id' => $especialidad->id, 'nombre' => 'Limpieza dental', 'duracion_minutos' => 30]);
-        $horario = Horario::create(['dia_semana' => 'lunes', 'hora_inicio' => '09:00', 'hora_fin' => '14:00']);
-        $cita = Cita::create([
-            'paciente_id' => $paciente->id,
-            'servicio_id' => $servicio->id,
-            'horario_id' => $horario->id,
-            'fecha' => '2026-09-07',
-            'hora' => '10:00',
-            'status' => 'atendida',
-        ]);
-        NotaEvolucion::guardarDeCita($cita, [
-            'procedimiento' => 'Limpieza y aplicación de flúor.',
-            'indicaciones' => 'Enjuague con clorhexidina.',
-        ], $doctora->id);
-
-        $respuesta = $this->actingAs($paciente)->get(route('paciente.perfil.index'))->assertOk();
-
-        // Lo que sí ve
-        $respuesta->assertSee('Penicilina')
-            ->assertSee('Caries en 36')
-            ->assertSee('Resina en 36')
-            ->assertSee('Cara oclusal')
-            ->assertSee('Limpieza y aplicación de flúor.')
-            ->assertSee('Enjuague con clorhexidina.')
-            ->assertSee('ARCADA SUPERIOR');
-
-        // Lo que no debe ver
-        $respuesta->assertDontSee('SECRETO')
-            ->assertDontSee('PRIVADO')
-            ->assertDontSee('NOTAS DE LA DOCTORA');
-
-        // Y no hay forma de editarlo desde aquí
-        $respuesta->assertDontSee(route('admin.pacientes.expediente.update', $paciente->id), false)
-            ->assertDontSee(route('admin.pacientes.odontograma.update', $paciente->id), false);
     }
 
     public function test_el_perfil_es_solo_del_paciente_autenticado(): void
