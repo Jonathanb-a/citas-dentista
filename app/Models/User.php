@@ -50,6 +50,40 @@ class User extends Authenticatable implements MustVerifyEmail
         return $this->hasOne(Expediente::class, 'paciente_id');
     }
 
+    // Foto de perfil: 'foto' no es asignable en masa; solo la fija el controlador de la foto
+    /**
+     * URL pública de la foto, o null (se muestran las iniciales). Nunca lanza: si el disco de imágenes
+     * no está disponible (Volume sin montar, sin permisos), el perfil sigue funcionando sin foto.
+     */
+    public function fotoUrl(): ?string
+    {
+        if (!$this->foto) {
+            return null;
+        }
+
+        try {
+            return app(\App\Services\ImagenService::class)->url($this->foto);
+        } catch (\Throwable $e) {
+            static $avisado = false;
+
+            if (!$avisado) {
+                $avisado = true;
+                Log::warning('Foto de perfil: el disco de imágenes no está disponible (' . class_basename($e) . ').');
+            }
+
+            return null;
+        }
+    }
+
+    /** "MG" para María González; con un solo nombre, una inicial; nunca vacío */
+    public function iniciales(): string
+    {
+        $letra = fn (?string $texto) => preg_match('/\p{L}/u', (string) $texto, $m) ? mb_strtoupper($m[0]) : '';
+        $iniciales = $letra($this->name) . $letra($this->apellidos);
+
+        return $iniciales !== '' ? $iniciales : '?';
+    }
+
     // Helpers de roles
     /**
      * Envía el correo de verificación sin arriesgar la operación del usuario:

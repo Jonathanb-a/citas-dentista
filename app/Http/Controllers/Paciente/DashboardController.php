@@ -12,30 +12,28 @@ class DashboardController extends Controller
     {
         $pacienteId = auth()->id();
 
-        // Próxima cita (la más cercana que esté pendiente o confirmada)
+        // "Hoy" en la zona horaria del consultorio (la app corre en UTC)
+        $hoy = Carbon::now((string) config('consultorio.zona_horaria'))->toDateString();
+
+        // Próxima cita (la más cercana que esté pendiente o confirmada). Solo las del propio paciente
         $proximaCita = Cita::with(['servicio.especialidad'])
             ->where('paciente_id', $pacienteId)
             ->whereIn('status', ['pendiente', 'confirmada'])
-            ->where('fecha', '>=', Carbon::today())
+            ->where('fecha', '>=', $hoy)
             ->orderBy('fecha', 'asc')
             ->orderBy('hora', 'asc')
             ->first();
 
-        // Conteos
-        $totalPendientes = Cita::where('paciente_id', $pacienteId)
-            ->where('status', 'pendiente')->count();
+        // Resumen: una sola consulta agrupada, sin cargar las citas en memoria
+        $porEstado = Cita::where('paciente_id', $pacienteId)
+            ->selectRaw('status, count(*) as total')
+            ->groupBy('status')
+            ->pluck('total', 'status');
 
-        $totalConfirmadas = Cita::where('paciente_id', $pacienteId)
-            ->where('status', 'confirmada')->count();
+        $totalCitas = (int) $porEstado->sum();            // todas, incluidas canceladas y reagendadas
+        $totalAtendidas = (int) ($porEstado['atendida'] ?? 0);
+        $totalCanceladas = (int) ($porEstado['cancelada'] ?? 0);
 
-        $totalAtendidas = Cita::where('paciente_id', $pacienteId)
-            ->where('status', 'atendida')->count();
-
-        return view('paciente.dashboard', compact(
-            'proximaCita',
-            'totalPendientes',
-            'totalConfirmadas',
-            'totalAtendidas'
-        ));
+        return view('paciente.dashboard', compact('proximaCita', 'totalCitas', 'totalAtendidas', 'totalCanceladas'));
     }
 }

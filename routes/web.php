@@ -24,6 +24,7 @@ use App\Http\Controllers\Asistente\PacienteController as AsistentePacienteContro
 use App\Http\Controllers\Paciente\CitaController;
 use App\Http\Controllers\Paciente\DashboardController as PacienteDashboardController;
 use App\Http\Controllers\Paciente\PerfilController;
+use App\Http\Controllers\Paciente\FotoPerfilController;
 
 // Página principal
 Route::get('/', [LandingController::class, 'index'])->name('landing');
@@ -194,6 +195,12 @@ Route::middleware(['auth', 'role:paciente'])->prefix('paciente')->name('paciente
     Route::get('/perfil', [PerfilController::class, 'index'])->name('perfil.index');
     Route::put('/perfil', [PerfilController::class, 'actualizarDatos'])->name('perfil.datos');
     Route::put('/perfil/password', [PerfilController::class, 'cambiarPassword'])->name('perfil.password');
+
+    // Foto de perfil: sin id (cada paciente solo toca la suya) y con límite por usuario y por hora
+    Route::middleware('throttle:foto-perfil')->group(function () {
+        Route::post('/perfil/foto', [FotoPerfilController::class, 'guardar'])->name('perfil.foto');
+        Route::delete('/perfil/foto', [FotoPerfilController::class, 'quitar'])->name('perfil.foto.quitar');
+    });
 
     // Mi opinión: un testimonio por paciente (crear, editar y borrar el propio), con límite por usuario
     Route::get('/testimonio', [PacienteTestimonioController::class, 'index'])->name('testimonio.index');

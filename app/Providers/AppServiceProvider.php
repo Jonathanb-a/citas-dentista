@@ -38,6 +38,10 @@ class AppServiceProvider extends ServiceProvider
         // Enlace public/imagenes → Volume (solo web, con IMAGENES_ROOT y una vez por proceso; nunca lanza)
         $this->app->make(EnlaceImagenes::class)->asegurar();
 
+        // Foto de perfil: subir, cambiar y quitar, por usuario y por hora (al pasarse, 429)
+        RateLimiter::for('foto-perfil', fn (Request $request) => Limit::perHour((int) config('imagenes.foto_perfil_limite_hora'))
+            ->by('foto-perfil:' . ($request->user()?->id ?? $request->ip())));
+
         // Correo por la API de Resend con tiempos límite (el transporte del paquete no los trae)
         Mail::extend('resend', fn (array $config) => $this->app->make(CorreoResend::class)->transporte($config));
 

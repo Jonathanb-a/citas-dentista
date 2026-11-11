@@ -20,6 +20,7 @@
         <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
             <div>
                 <div class="flex flex-wrap items-center gap-3">
+                    <x-avatar :usuario="$paciente" tamano="h-14 w-14" texto="text-xl" />
                     <h1 class="font-bold text-gray-800 text-2xl">{{ $paciente->name }} {{ $paciente->apellidos }}</h1>
                     @if($paciente->activo)
                         <span class="bg-green-50 text-green-600 text-xs font-medium px-3 py-1 rounded-full">Activo</span>

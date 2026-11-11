@@ -69,6 +69,56 @@ sus datos siguen igual; solo se quitó el acceso del paciente.
   de otro— y para la asistente, redirección al login sin sesión, la doctora sigue viendo y editando,
   y los datos siguen existiendo). Verificado quitando a propósito cada defensa
 
+## Perfil e Inicio del paciente (foto, resumen y próxima cita)
+- **Foto de perfil** (Mi perfil > Mis datos, `Paciente\FotoPerfilController`): `POST` y `DELETE`
+  `/paciente/perfil/foto`, **sin id en la ruta**: cada paciente solo toca la suya (`auth()->user()`).
+  Detrás de `role:paciente` (doctora y asistente reciben 403) y **los pacientes del chat reciben 403**
+  (`esDeChat()`). Columna `users.foto` (ruta relativa de `ImagenService`, carpeta `perfiles`; migración
+  idempotente; **no es asignable en masa**). Subir o cambiar guarda la nueva, registra la ruta y solo
+  después borra la anterior; quitar borra el archivo y deja la columna en null
+- Pasa por `ImagenService` con la opción `['cuadrada' => 512]` (`config('imagenes.avatar_px')`): con
+  GD recorta al centro a cuadrado y reduce a 512 px sin ampliar nunca (una foto de 300x200 queda de
+  200x200), conserva formato y transparencia y quita los metadatos. **Sin GD se guarda el original**
+  (el avatar circular lo recorta el navegador con `object-cover`). Valida el contenido real (JPG, PNG
+  o WebP, máx. 5 MB; un texto o un SVG con extensión `.jpg` se rechaza; una imagen real con extensión
+  engañosa se guarda con su extensión real) y usa nombres aleatorios
+- **Límite**: 5 subidas, cambios o quitar por hora por usuario (`throttle:foto-perfil`,
+  `FOTO_PERFIL_LIMITE_HORA`; 429 al pasarse; el límite es por usuario)
+- **Avatar** (`<x-avatar :usuario="$u" tamano="h-10 w-10" texto="text-sm" />`): foto circular o, sin
+  foto, un círculo rosa con las iniciales (`User::iniciales()`: la primera letra del nombre y del
+  apellido; nunca vacío). Se ve junto a "Hola, {nombre}" en el menú superior, en el menú móvil, en Mi
+  perfil y en la **ficha de la doctora** (`admin.pacientes.show`). Si la imagen no carga (404) cae a
+  las iniciales. Nombre e iniciales se escapan con Blade. **No aparece en la landing** (los
+  testimonios solo usan el nombre)
+- **Si el disco de imágenes no está disponible** (`IMAGENES_ROOT` sin montar o sin permisos): al subir,
+  mensaje amable ("No pudimos guardar tu foto en este momento… tu perfil sigue funcionando") y la foto
+  anterior queda; `User::fotoUrl()` nunca lanza (devuelve null y se ven las iniciales), porque Laravel
+  falla al abrir un disco local cuyo directorio no se puede crear y eso tumbaría el perfil entero
+- **Logs**: solo la clase del error ("Foto de perfil: no se pudo guardar (UnableToCreateDirectory)"),
+  sin rutas ni contenido. Los logs de `ImagenService` también quedaron así: **solo la clase del
+  error**, sin ruta ni mensaje (antes `eliminar()` y el redimensionado registraban `getMessage()`)
+- **Privacidad (mejora futura)**: las fotos quedan en el disco público `imagenes`
+  (`/imagenes/perfiles/<id aleatorio>.jpg`): el nombre no se puede adivinar, pero **no hay control de
+  acceso** (quien tenga el enlace la ve; el enlace solo se muestra al paciente y a la doctora). Si se
+  usa con pacientes reales, conviene **servir las fotos desde un disco privado con una ruta
+  autenticada** (solo el paciente y la doctora) en lugar del disco público
+- **Inicio del paciente** (`Paciente\DashboardController`): el **resumen** muestra **Total, Atendidas
+  y Canceladas** con **una sola consulta agrupada** (`select status, count(*) … group by status`), sin
+  cargar citas en memoria. **Total cuenta todas las citas, incluidas canceladas y reagendadas**
+  (reemplazó a Pendientes y Confirmadas). "Tu próxima cita" es la más cercana pendiente o confirmada
+  desde **hoy en la zona horaria del consultorio**, solo del propio paciente, con servicio,
+  especialidad, fecha (en español) y hora. Estados: **pendiente** = "la clínica aún no la acepta" (sin
+  botón); **confirmada** y sin confirmar = "Aceptada por la clínica" con el botón **Confirmar mi
+  asistencia** (la ruta `paciente.citas.confirmar` de siempre); confirmada y confirmada por el
+  paciente = "Confirmada ✓". Sin próxima cita: mensaje amable y botón "Agendar cita". "Mis citas"
+  sigue siendo la lista completa
+- **Pruebas**: `FotoPerfilTest` (subir, cambiar y quitar con el archivo viejo desaparecido, tipos y
+  tamaños inválidos, imagen falsa, recorte cuadrado con GD, autorización, límite, disco caído, avatar
+  y logs) e `InicioPacienteTest` (contadores, próxima cita con y sin cita, estados, zona horaria, datos
+  de otros pacientes). Verificado quitando a propósito cada defensa y en navegador (52 comprobaciones
+  en 390 y 1440 px, con un Volume real: foto de 512 px, el archivo viejo borrado del Volume, el enlace
+  `public/imagenes` creado solo)
+
 ## ⚠️ Pendiente antes de entregar
 
 ### 1. Dominio verificado en Resend (decide si el correo sirve para pacientes)
@@ -331,7 +381,9 @@ la misma sección `#testimonios`; el promedio de estrellas solo cuenta las de pa
   guarda la ruta, nunca una URL
 - Valida el contenido real: JPG, PNG o WebP (no SVG ni GIF), máx. 5 MB y
   4096 px por lado (`config/imagenes.php`). Nombre aleatorio y extensión
-  según el contenido
+  según el contenido. Opción `guardar(..., opciones: ['cuadrada' => 512])`: recorte cuadrado al
+  centro y reducción a ese lado (fotos de perfil). Los logs del servicio llevan **solo la clase del
+  error**, sin rutas ni mensajes
 - **Redimensionado al guardar** (opcional, solo si la extensión GD está
   cargada): reduce a 1600 px de ancho máximo sin ampliar nunca, conserva
   formato y transparencia (JPG, PNG, WebP), aplica la rotación EXIF de las

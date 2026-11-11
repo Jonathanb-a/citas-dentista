@@ -23,4 +23,8 @@ return [
     'redimensionar' => (bool) env('IMAGENES_REDIMENSIONAR', true),
     'ancho_max' => 1600,
     'calidad' => 85, // JPG y WebP
+
+    // Foto de perfil del paciente: lado del cuadrado (px) y subidas/cambios/quitar por usuario y por hora
+    'avatar_px' => 512,
+    'foto_perfil_limite_hora' => (int) (env('FOTO_PERFIL_LIMITE_HORA') ?: 5),
 ];

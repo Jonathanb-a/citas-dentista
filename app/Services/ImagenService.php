@@ -85,9 +85,12 @@ class ImagenService
      * Valida y guarda la imagen con un nombre aleatorio y la extensión real.
      * Devuelve la ruta relativa para guardar en la base de datos.
      *
+     * $opciones: ['cuadrada' => 512] recorta al centro a cuadrado y reduce a ese lado (nunca amplía),
+     * pensado para fotos de perfil. Requiere GD; sin GD se guarda el original, como siempre.
+     *
      * @throws \Illuminate\Validation\ValidationException si no es una imagen válida
      */
-    public function guardar(UploadedFile $archivo, string $carpeta, ?int $maxKb = null): string
+    public function guardar(UploadedFile $archivo, string $carpeta, ?int $maxKb = null, array $opciones = []): string
     {
         if (!preg_match('#^[a-z0-9_-]+(/[a-z0-9_-]+)*$#', $carpeta)) {
             throw new \InvalidArgumentException('Carpeta de imágenes inválida.');
@@ -103,7 +106,7 @@ class ImagenService
 
         // Con GD se guarda la versión reducida y sin metadatos; si no hay GD, o algo falla,
         // se guarda el archivo original: el redimensionado nunca impide una subida
-        $optimizada = $this->optimizar($archivo, $tipo);
+        $optimizada = $this->optimizar($archivo, $tipo, (int) ($opciones['cuadrada'] ?? 0));
 
         if ($optimizada !== null) {
             $ruta = $this->disco()->put("$carpeta/$nombre", $optimizada, 'public') ? "$carpeta/$nombre" : false;
@@ -122,9 +125,9 @@ class ImagenService
      * Guarda la nueva y, solo si eso salió bien, borra la anterior.
      * Si necesitas guardar la ruta en la base entre ambos pasos, usa guardar() y eliminar().
      */
-    public function reemplazar(?string $anterior, UploadedFile $nueva, string $carpeta, ?int $maxKb = null): string
+    public function reemplazar(?string $anterior, UploadedFile $nueva, string $carpeta, ?int $maxKb = null, array $opciones = []): string
     {
-        $ruta = $this->guardar($nueva, $carpeta, $maxKb);
+        $ruta = $this->guardar($nueva, $carpeta, $maxKb, $opciones);
         $this->eliminar($anterior);
 
         return $ruta;
@@ -138,7 +141,7 @@ class ImagenService
         }
 
         if (!$this->rutaValida($ruta)) {
-            Log::warning('Imágenes: se ignoró el borrado de una ruta inválida: ' . $ruta);
+            Log::warning('Imágenes: se ignoró el borrado de una ruta inválida.');
 
             return false;
         }
@@ -146,7 +149,7 @@ class ImagenService
         try {
             return (bool) $this->disco()->delete($ruta);
         } catch (\Throwable $e) {
-            Log::warning('Imágenes: no se pudo borrar ' . $ruta . ': ' . $e->getMessage());
+            Log::warning('Imágenes: no se pudo borrar una imagen (' . class_basename($e) . ').');
 
             return false;
         }
@@ -186,7 +189,7 @@ class ImagenService
      * Devuelve null cuando hay que guardar el original: sin GD, desactivado, WebP animado,
      * poca memoria o cualquier fallo (este último se registra en el log). Nunca lanza excepciones.
      */
-    private function optimizar(UploadedFile $archivo, int $tipo): ?string
+    private function optimizar(UploadedFile $archivo, int $tipo, int $lado = 0): ?string
     {
         if (!config('imagenes.redimensionar') || !$this->gdDisponible() || !$this->gdSoporta($tipo)) {
             return null;
@@ -218,7 +221,7 @@ class ImagenService
                 $imagen = $this->corregirRotacion($imagen, $ruta);
             }
 
-            $imagen = $this->limitarAncho($imagen, $tipo);
+            $imagen = $lado > 0 ? $this->recortarCuadrada($imagen, $tipo, $lado) : $this->limitarAncho($imagen, $tipo);
             $bytes = $this->codificar($imagen, $tipo);
 
             if ($bytes === '') {
@@ -227,7 +230,7 @@ class ImagenService
 
             return $bytes;
         } catch (\Throwable $e) {
-            Log::warning('Imágenes: no se pudo redimensionar, se guardó el original: ' . $e->getMessage());
+            Log::warning('Imágenes: no se pudo redimensionar, se guardó el original (' . class_basename($e) . ').');
 
             return null;
         }
@@ -303,6 +306,34 @@ class ImagenService
         }
 
         return $imagen;
+    }
+
+    // Recorta al centro el cuadrado más grande y, si pasa de $lado px, lo reduce a $lado (nunca amplía)
+    private function recortarCuadrada(\GdImage $imagen, int $tipo, int $lado): \GdImage
+    {
+        $conAlfa = $tipo !== IMAGETYPE_JPEG;
+        $ancho = imagesx($imagen);
+        $alto = imagesy($imagen);
+
+        if ($conAlfa && !imageistruecolor($imagen)) {
+            imagepalettetotruecolor($imagen); // PNG indexado
+        }
+
+        $origen = min($ancho, $alto);
+        $destino = min($origen, $lado);
+        $cuadrada = imagecreatetruecolor($destino, $destino);
+
+        if ($conAlfa) {
+            imagealphablending($cuadrada, false);
+            imagesavealpha($cuadrada, true);
+            imagefill($cuadrada, 0, 0, imagecolorallocatealpha($cuadrada, 0, 0, 0, 127));
+        }
+
+        if (!imagecopyresampled($cuadrada, $imagen, 0, 0, intdiv($ancho - $origen, 2), intdiv($alto - $origen, 2), $destino, $destino, $origen, $origen)) {
+            throw new \RuntimeException('GD no pudo recortar la imagen.');
+        }
+
+        return $cuadrada;
     }
 
     // Reduce al ancho máximo conservando la proporción y la transparencia; nunca amplía

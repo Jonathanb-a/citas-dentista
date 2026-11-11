@@ -46,7 +46,10 @@
 
             {{-- Usuario + Logout --}}
             <div class="hidden md:flex items-center gap-4">
-                <span class="text-sm text-gray-600">Hola, {{ auth()->user()->name }}</span>
+                <a href="{{ route('paciente.perfil.index') }}" class="flex items-center gap-3" aria-label="Mi perfil">
+                    <x-avatar :usuario="auth()->user()" tamano="h-10 w-10" texto="text-sm" />
+                    <span class="text-sm text-gray-600">Hola, {{ auth()->user()->name }}</span>
+                </a>
                 <form method="POST" action="{{ route('logout') }}">
                     @csrf
                     <button type="submit"
@@ -67,6 +70,10 @@
 
         {{-- Menu mobile --}}
         <div x-show="menuAbierto" x-cloak class="md:hidden bg-white border-t border-gray-100 px-6 py-4 flex flex-col gap-3">
+            <a href="{{ route('paciente.perfil.index') }}" class="flex items-center gap-3 pb-3 border-b border-gray-100">
+                <x-avatar :usuario="auth()->user()" tamano="h-11 w-11" texto="text-base" />
+                <span class="text-sm font-semibold text-gray-700">Hola, {{ auth()->user()->name }}</span>
+            </a>
             <a href="{{ route('paciente.dashboard') }}" class="text-sm font-medium text-gray-600">Inicio</a>
             <a href="{{ route('paciente.citas.index') }}" class="text-sm font-medium text-gray-600">Mis citas</a>
             <a href="{{ route('paciente.citas.create') }}" class="text-sm font-medium text-gray-600">Agendar cita</a>
