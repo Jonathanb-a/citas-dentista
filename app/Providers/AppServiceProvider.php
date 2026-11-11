@@ -3,6 +3,7 @@
 namespace App\Providers;
 
 use App\Services\CorreoResend;
+use App\Services\EnlaceImagenes;
 use App\Services\IA\ProveedorIA;
 use App\Services\IA\ProveedorIAFactory;
 use Illuminate\Cache\RateLimiting\Limit;
@@ -33,6 +34,9 @@ class AppServiceProvider extends ServiceProvider
         if ($this->app->environment('production')) {
             URL::forceScheme('https');
         }
+
+        // Enlace public/imagenes → Volume (solo web, con IMAGENES_ROOT y una vez por proceso; nunca lanza)
+        $this->app->make(EnlaceImagenes::class)->asegurar();
 
         // Correo por la API de Resend con tiempos límite (el transporte del paquete no los trae)
         Mail::extend('resend', fn (array $config) => $this->app->make(CorreoResend::class)->transporte($config));

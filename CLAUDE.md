@@ -336,17 +336,29 @@ la misma sección `#testimonios`; el promedio de estrellas solo cuenta las de pa
   `IMAGENES_ROOT` (carpeta; por defecto `storage/app/public/imagenes`),
   `IMAGENES_URL` (por defecto `/imagenes`, solo si se usa un CDN) e
   `IMAGENES_DISK` (para cambiar a `s3` sin tocar código). `php artisan
-  storage:link` crea `public/imagenes` apuntando a `IMAGENES_ROOT`
+  storage:link` crea `public/imagenes` apuntando a `IMAGENES_ROOT` (en local; en Railway lo hace
+  solo la app al arrancar, ver el paso 3 de Railway)
 - **Railway** (los archivos del contenedor se pierden en cada deploy):
   1. Crear un Volume en el servicio, montado en `/data`
   2. Variable `IMAGENES_ROOT=/data/imagenes`
-  3. El enlace `public/imagenes` hay que recrearlo en cada deploy
-     (`public/` se reconstruye; sin enlace las imágenes dan 404). Con el
-     builder **Railpack** (el de los servicios nuevos; se ve en Settings →
-     Build) el script de arranque ya corre `php artisan storage:link`
-     (y también `migrate --force`: las migraciones nuevas se aplican
-     solas al desplegar). Con Nixpacks o Dockerfile hay que agregar
-     `php artisan storage:link --force` al comando de pre-deploy
+  3. **El enlace `public/imagenes` se crea solo al arrancar** (`App\Services\EnlaceImagenes`, llamado
+     desde `AppServiceProvider::boot()`): `public/` se reconstruye en cada deploy y sin enlace las
+     imágenes darían 404, pero ya no hace falta `storage:link` en ningún comando de Railway. El
+     **Start Command de Railway está vacío** y las migraciones se aplican solas al desplegar
+     (el script de arranque de Railpack corre `migrate --force`): no hay nada que configurar allá.
+     Reglas del enlace automático:
+     - Solo actúa con un Volume: `IMAGENES_ROOT` definido y **distinto de la ruta por defecto** del
+       proyecto (`filesystems.imagenes_ruta_defecto`, la misma que usan el disco y `links`), y con
+       `IMAGENES_DISK=imagenes` (con `s3` no hace nada)
+     - **Solo en peticiones web**: no corre en pruebas ni en consola (`migrate`, `schedule`,
+       `storage:link`…). Una vez por proceso; si el enlace ya está bien, el costo es un `readlink`
+     - Crea la carpeta destino si falta; si `public/imagenes` no existe, la enlaza; si es un enlace
+       a otro lugar (o roto), lo corrige. Si es una **carpeta o archivo real, no la toca** (podría
+       tener imágenes) y solo avisa en el log
+     - Nunca rompe la app: si falla (p. ej. permisos de `public/`), el log dice "no se pudo crear el
+       enlace public/imagenes (falló symlink|mkdir|unlink)" con solo la clase o la función que falló,
+       **sin rutas**, y las imágenes darán 404. Respaldo manual: `php artisan storage:link --force`
+       desde una consola de Railway (o como pre-deploy)
   4. Si al subir sale "permission denied": variable `RAILWAY_RUN_UID=0`
   5. Límite de 5 MB por imagen: el proyecto trae su propio `php.ini` en la
      raíz con `upload_max_filesize = 6M` (por archivo) y
@@ -378,7 +390,14 @@ la misma sección `#testimonios`; el promedio de estrellas solo cuenta las de pa
   XAMPP (`C:\xampp\php`, el que está en el PATH y usa `php artisan`)
   tiene límites de 40 MB y GD desactivado (`;extension=gd`)
 - En local con Windows, `storage:link` puede pedir una consola de
-  administrador para crear el enlace
+  administrador para crear el enlace (el enlace automático de Railway no corre en local: sin
+  `IMAGENES_ROOT` o con la ruta por defecto no hace nada)
+- Pruebas del enlace: `EnlaceImagenesTest` (carpetas temporales reales: crea, ya estaba bien, corrige,
+  carpeta real intacta, fallos sin rutas en el log, una vez por proceso, no corre sin Volume ni con la
+  ruta por defecto ni con s3; `phpunit.xml` deja `IMAGENES_ROOT` vacío). Verificado quitando a
+  propósito cada defensa y con un servidor web real con `IMAGENES_ROOT` (el enlace aparece en la
+  primera petición y no en consola). Una defensa no se puede probar sola: que no corra en consola,
+  porque en pruebas `runningUnitTests` y `runningInConsole` son ambas verdaderas
 - Pruebas: `Storage::fake('imagenes')` y `tests/Support/ImagenesDePrueba`
   (bytes reales de imagen, sin GD). Las pruebas del redimensionado
   (`ImagenRedimensionadoTest`) que necesitan GD se omiten solas si no está

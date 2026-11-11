@@ -1,5 +1,8 @@
 <?php
 
+// Una sola definición de la ruta por defecto de las imágenes (sin Volume)
+$rutaImagenesPorDefecto = storage_path('app/public/imagenes');
+
 return [
 
     /*
@@ -28,6 +31,10 @@ return [
     |
     */
 
+    // Ruta de las imágenes cuando NO hay Volume (IMAGENES_ROOT vacío). La usan el disco
+    // `imagenes`, `links` y App\Services\EnlaceImagenes, para que los tres coincidan.
+    'imagenes_ruta_defecto' => $rutaImagenesPorDefecto,
+
     'disks' => [
 
         'local' => [
@@ -51,7 +58,7 @@ return [
         // apuntar al Volume de Railway; IMAGENES_URL solo si se sirven desde un CDN.
         'imagenes' => [
             'driver' => 'local',
-            'root' => (env('IMAGENES_ROOT') ?: storage_path('app/public/imagenes')),
+            'root' => (env('IMAGENES_ROOT') ?: $rutaImagenesPorDefecto),
             'url' => (env('IMAGENES_URL') ?: '/imagenes'),
             'visibility' => 'public',
             'throw' => false,
@@ -86,7 +93,7 @@ return [
 
     'links' => [
         public_path('storage') => storage_path('app/public'),
-        public_path('imagenes') => (env('IMAGENES_ROOT') ?: storage_path('app/public/imagenes')),
+        public_path('imagenes') => (env('IMAGENES_ROOT') ?: $rutaImagenesPorDefecto),
     ],
 
 ];
