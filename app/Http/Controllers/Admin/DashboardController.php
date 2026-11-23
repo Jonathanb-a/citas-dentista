@@ -6,12 +6,13 @@ use App\Http\Controllers\Controller;
 use App\Models\Cita;
 use App\Models\User;
 use Carbon\Carbon;
+use App\Support\Consultorio;
 
 class DashboardController extends Controller
 {
     public function index()
     {
-        $hoy = Carbon::today();
+        $hoy = Consultorio::hoy();
 
         // Estadisticas del dia
         $citasHoy = Cita::whereDate('fecha', $hoy)->count();

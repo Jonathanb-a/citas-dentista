@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Auth;
 use App\Http\Controllers\Controller;
 use App\Models\User;
 use App\Models\Expediente;
+use App\Support\Telefono;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
@@ -22,7 +23,7 @@ class RegisterController extends Controller
             'name'                  => 'required|string|max:255',
             'apellidos'             => 'required|string|max:255',
             'email'                 => 'required|email|unique:users,email',
-            'telefono'              => 'required|string|max:20|unique:users,telefono',
+            'telefono'              => Telefono::reglas(true, 'Ese teléfono ya está registrado.'),
             'sexo'                  => 'required|in:masculino,femenino',
             'password'              => 'required|min:8|confirmed',
         ], [
@@ -44,7 +45,7 @@ class RegisterController extends Controller
         $user->name      = $request->name;
         $user->apellidos = $request->apellidos;
         $user->email     = $request->email;
-        $user->telefono  = $request->telefono;
+        $user->telefono  = Telefono::normalizar($request->telefono);
         $user->sexo      = $request->sexo;
         $user->password  = Hash::make($request->password);
         $user->role      = 'paciente';   // asignado en código, nunca desde el formulario

@@ -30,6 +30,8 @@ class PasswordTemporalService
         $usuario->password = Hash::make($password);
         $usuario->password_restablecida_por = $restablecidaPor;
         $usuario->password_restablecida_en = now();
+        // Es temporal: tendrá que cambiarla al entrar (CambioPasswordController)
+        $usuario->debe_cambiar_password = true;
         // Invalida las cookies de "recordarme" de sesiones anteriores
         $usuario->setRememberToken(Str::random(60));
         $usuario->save();

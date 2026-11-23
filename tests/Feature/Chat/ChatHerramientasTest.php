@@ -194,7 +194,7 @@ class ChatHerramientasTest extends ChatTestCase
     {
         $servicio = $this->crearServicio();
         $this->app->bind(\App\Services\DisponibilidadService::class, fn () => new class extends \App\Services\DisponibilidadService {
-            public function espaciosDisponibles($fecha, $servicioId)
+            public function espaciosDisponibles($fecha, $servicioId, $ignorarCitaId = null)
             {
                 throw new \RuntimeException('Ana Ejemplo ' . self::class);
             }

@@ -30,22 +30,17 @@ class CitaManualService
      */
     public function crear(array $datos, $creadoPor)
     {
-        // 0. Verificar disponibilidad (horarios, citas y bloqueos) antes de crear nada,
-        // para no dejar un paciente nuevo huérfano si el horario no sirve
-        $espacios = $this->disponibilidad->espaciosDisponibles(
-            $datos['fecha'],
-            $datos['servicio_id']
-        );
-
-        if (!collect($espacios)->contains('hora', $datos['hora'])) {
-            return ['error' => 'Ese horario ya no está disponible. Por favor elige otro.'];
-        }
-
-        $espacio = collect($espacios)->firstWhere('hora', $datos['hora']);
-
         // Todo en una transacción: si la cita no se puede guardar, tampoco queda el paciente nuevo ni su expediente
         try {
-            return DB::transaction(function () use ($datos, $espacio, $creadoPor) {
+            return DB::transaction(function () use ($datos, $creadoPor) {
+                // 0. Verificar disponibilidad (horarios, citas y bloqueos) bloqueando el día: quien agenda a la
+                // vez hace fila. Va antes de crear nada, para no dejar un paciente nuevo si el horario no sirve
+                $espacio = $this->disponibilidad->espacioConBloqueo($datos['fecha'], $datos['servicio_id'], $datos['hora']);
+
+                if (!$espacio) {
+                    return ['error' => 'Ese horario ya no está disponible. Por favor elige otro.'];
+                }
+
                 // 1. Determinar el paciente
                 $panelPassword = null;
 
@@ -56,12 +51,13 @@ class CitaManualService
                     $paciente = new User();
                     $paciente->name = $datos['nuevo_nombre'];
                     $paciente->apellidos = $datos['nuevo_apellidos'];
-                    $paciente->telefono = $datos['nuevo_telefono'] ?? null;
+                    $paciente->telefono = \App\Support\Telefono::normalizar($datos['nuevo_telefono'] ?? null);
                     $paciente->email = $datos['nuevo_email'];
                     $paciente->sexo = $datos['nuevo_sexo'];
                     $paciente->password = Hash::make($passwordTemporal);
                     $paciente->role = 'paciente';   // asignado explícitamente, no por fillable
                     $paciente->activo = true;
+                    $paciente->debe_cambiar_password = true;   // la contraseña es temporal
                     $paciente->save();
 
                     // Crear su expediente vacío
@@ -127,44 +123,45 @@ class CitaManualService
             return ['error' => 'No se puede reagendar una cita que ya fue atendida o cancelada.'];
         }
 
-        // Verificar disponibilidad del nuevo horario
-        $espacios = $this->disponibilidad->espaciosDisponibles(
-            $datos['fecha'],
-            $cita->servicio_id
-        );
-
-        $espacio = collect($espacios)->firstWhere('hora', $datos['hora']);
-
-        if (!$espacio) {
-            return ['error' => 'Ese horario no está disponible. Por favor elige otro.'];
-        }
-
         // Fecha y hora anteriores, para el aviso a la clínica
         $antes = $cita->fecha->toDateString() . ' ' . Carbon::parse($cita->hora)->format('H:i');
 
-        // Actualizar la cita con la nueva fecha y hora
+        // Actualizar la cita con la nueva fecha y hora (bloqueando el día: quien agenda a la vez hace fila)
         try {
-            $cita->update([
-                'fecha' => $datos['fecha'],
-                'hora' => $datos['hora'],
-                'horario_id' => $espacio['horario_id'],   // lo deriva el servidor, no el formulario
-                'status' => 'confirmada',
-                // Un paciente del chat no puede confirmar por su cuenta: reagendarla ya lo habló la clínica
-                'confirmado_por_paciente' => (bool) $cita->paciente?->esDeChat(),
-                'confirmacion_limite' => Carbon::now()->addHours(24),
-            ]);
+            $resultado = DB::transaction(function () use ($cita, $datos, $reagendadoPor) {
+                // La cita que se mueve no cuenta como ocupante del espacio nuevo
+                $espacio = $this->disponibilidad->espacioConBloqueo($datos['fecha'], $cita->servicio_id, $datos['hora'], $cita->id);
 
-            HistorialCita::create([
-                'cita_id' => $cita->id,
-                'user_id' => $reagendadoPor,
-                'accion' => 'reagendada',
-                'descripcion' => 'Cita reagendada por ' . auth()->user()->name . ' a una nueva fecha y hora.',
-            ]);
+                if (!$espacio) {
+                    return ['error' => 'Ese horario no está disponible. Por favor elige otro.'];
+                }
 
-            // Aviso a la clínica, ya con la cita guardada y después de responder
-            app(TelegramService::class)->enSegundoPlano(fn ($telegram) => $telegram->citaReagendada($cita, $antes));
+                $cita->update([
+                    'fecha' => $datos['fecha'],
+                    'hora' => $datos['hora'],
+                    'horario_id' => $espacio['horario_id'],   // lo deriva el servidor, no el formulario
+                    'status' => 'confirmada',
+                    // Un paciente del chat no puede confirmar por su cuenta: reagendarla ya lo habló la clínica
+                    'confirmado_por_paciente' => (bool) $cita->paciente?->esDeChat(),
+                    'confirmacion_limite' => Carbon::now()->addHours(24),
+                ]);
 
-            return ['cita' => $cita];
+                HistorialCita::create([
+                    'cita_id' => $cita->id,
+                    'user_id' => $reagendadoPor,
+                    'accion' => 'reagendada',
+                    'descripcion' => 'Cita reagendada por ' . auth()->user()->name . ' a una nueva fecha y hora.',
+                ]);
+
+                return ['cita' => $cita];
+            });
+
+            if (isset($resultado['cita'])) {
+                // Aviso a la clínica, ya con la cita guardada y después de responder
+                app(TelegramService::class)->enSegundoPlano(fn ($telegram) => $telegram->citaReagendada($cita, $antes));
+            }
+
+            return $resultado;
 
         } catch (\Illuminate\Database\QueryException $e) {
             if (!Cita::esChoqueDeHorario($e)) {

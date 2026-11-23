@@ -67,6 +67,13 @@ Route::post('/email/verification-notification', function (\Illuminate\Http\Reque
     return back()->with('success', 'Te reenviamos el correo de verificación. Revisa tu bandeja.');
 })->middleware(['auth', 'throttle:3,1'])->name('verification.send');
 
+// Cambio obligatorio de la contraseña temporal (doctora, asistente y paciente)
+Route::middleware(['auth', 'role:admin,asistente,paciente'])->group(function () {
+    Route::get('/cambiar-password', [\App\Http\Controllers\Auth\CambioPasswordController::class, 'show'])->name('password.cambiar');
+    Route::put('/cambiar-password', [\App\Http\Controllers\Auth\CambioPasswordController::class, 'actualizar'])
+        ->middleware('throttle:5,1')->name('password.cambiar.actualizar');
+});
+
 // Rutas Admin — solo doctora
 Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->group(function () {
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');

@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\User;
 use App\Services\PasswordTemporalService;
+use App\Support\Telefono;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\Rule;
@@ -70,11 +71,12 @@ class PersonalController extends Controller
         $usuario->name = $request->name;
         $usuario->apellidos = $request->apellidos;
         $usuario->email = $request->email;
-        $usuario->telefono = $request->telefono;
+        $usuario->telefono = Telefono::normalizar($request->telefono);
         $usuario->sexo = $request->sexo;
         $usuario->password = Hash::make($password);
         $usuario->role = $request->role;   // asignado explícitamente, no por fillable
         $usuario->activo = true;
+        $usuario->debe_cambiar_password = true;   // la contraseña es temporal
         $usuario->save();
 
         return redirect()->route('admin.personal.index')
@@ -104,7 +106,7 @@ class PersonalController extends Controller
             'name' => $request->name,
             'apellidos' => $request->apellidos,
             'email' => $request->email,
-            'telefono' => $request->telefono,
+            'telefono' => Telefono::normalizar($request->telefono),
             'sexo' => $request->sexo,
         ]);
 
@@ -158,7 +160,7 @@ class PersonalController extends Controller
             'name' => 'required|string|max:255',
             'apellidos' => 'required|string|max:255',
             'email' => ['required', 'email', 'max:255', Rule::unique('users', 'email')->ignore($usuario?->id)],
-            'telefono' => ['nullable', 'string', 'max:20', Rule::unique('users', 'telefono')->ignore($usuario?->id)],
+            'telefono' => Telefono::reglas(false, 'Ya existe otro usuario con ese teléfono.', $usuario?->id),
             'sexo' => 'nullable|in:masculino,femenino',
             'role' => ['required', Rule::in(self::ROLES)],
         ];

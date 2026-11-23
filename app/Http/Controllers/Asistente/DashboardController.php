@@ -5,12 +5,13 @@ namespace App\Http\Controllers\Asistente;
 use App\Http\Controllers\Controller;
 use App\Models\Cita;
 use Carbon\Carbon;
+use App\Support\Consultorio;
 
 class DashboardController extends Controller
 {
     public function index()
     {
-        $hoy = Carbon::today();
+        $hoy = Consultorio::hoy();
 
         // Citas de hoy
         $citasHoy = Cita::whereDate('fecha', $hoy)->count();

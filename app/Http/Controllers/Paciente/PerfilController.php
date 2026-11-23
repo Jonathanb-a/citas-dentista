@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Paciente;
 
 use App\Http\Controllers\Controller;
 use App\Services\PasswordTemporalService;
+use App\Support\Telefono;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
@@ -28,7 +29,7 @@ class PerfilController extends Controller
             'name' => 'required|string|max:255',
             'apellidos' => 'required|string|max:255',
             'email' => ['required', 'email', 'max:255', Rule::unique('users', 'email')->ignore($paciente->id)],
-            'telefono' => ['nullable', 'string', 'max:20', Rule::unique('users', 'telefono')->ignore($paciente->id)],
+            'telefono' => Telefono::reglas(false, 'Ese teléfono ya está registrado.', $paciente->id),
             'sexo' => 'nullable|in:masculino,femenino',
             'fecha_nacimiento' => 'nullable|date|before:today|after:1900-01-01',
         ], [
@@ -51,7 +52,7 @@ class PerfilController extends Controller
             'name' => $datos['name'],
             'apellidos' => $datos['apellidos'],
             'email' => $datos['email'],
-            'telefono' => $datos['telefono'] ?? null,
+            'telefono' => Telefono::normalizar($datos['telefono'] ?? null),
             'sexo' => $datos['sexo'] ?? null,
             'fecha_nacimiento' => $datos['fecha_nacimiento'] ?? null,
         ]);
@@ -93,6 +94,7 @@ class PerfilController extends Controller
         ]);
 
         $paciente->password = Hash::make($request->password);
+        $paciente->debe_cambiar_password = false;
         // Invalida las cookies de "recordarme" de otros dispositivos
         $paciente->setRememberToken(Str::random(60));
         $paciente->save();

@@ -6,6 +6,7 @@ use App\Models\Bloqueo;
 use App\Models\Cita;
 use App\Models\HistorialCita;
 use Carbon\Carbon;
+use App\Support\Consultorio;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 
@@ -100,7 +101,7 @@ class BloqueoService
 
         return $citas
             ->filter(fn ($cita) => in_array($cita->status, self::STATUS_ACTIVOS, true)
-                && $cita->fecha->gte(Carbon::today())
+                && $cita->fecha->gte(Consultorio::hoy())
                 && $bloqueos->contains(fn ($bloqueo) => $bloqueo->chocaConCita($cita)))
             ->pluck('id')
             ->all();

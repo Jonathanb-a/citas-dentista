@@ -154,13 +154,20 @@ class AgendarCita implements HerramientaChat
 
         // 6. Crear: si algo falla, nada queda a medias (ni paciente huérfano)
         try {
-            $cita = DB::transaction(function () use ($existente, $datos, $espacio, $nombre, $apellidos, $telefono) {
+            $cita = DB::transaction(function () use ($existente, $datos, $nombre, $apellidos, $telefono) {
+                // Se vuelve a comprobar el espacio bloqueando el día: quien agenda a la vez hace fila
+                $libre = $this->disponibilidad->espacioConBloqueo($datos['fecha'], $datos['servicio_id'], $datos['hora']);
+
+                if (!$libre) {
+                    throw new \RuntimeException('horario_ocupado');
+                }
+
                 $paciente = $existente ?? $this->crearPaciente($nombre, $apellidos, $telefono);
 
                 $cita = Cita::create([
                     'paciente_id' => $paciente->id,
                     'servicio_id' => $datos['servicio_id'],
-                    'horario_id' => $espacio['horario_id'],
+                    'horario_id' => $libre['horario_id'],
                     'fecha' => $datos['fecha'],
                     'hora' => $datos['hora'],
                     'status' => 'pendiente',

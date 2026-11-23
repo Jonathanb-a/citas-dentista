@@ -948,6 +948,27 @@ nuevas**: son bloques de solo lectura al final de las instrucciones
   cambian el prompt, el log sin texto, horario, orden del prompt y estabilidad del prompt
   entre peticiones). Se verificó quitando a propósito cada defensa: cada una hace fallar pruebas
 
+## Agenda, teléfonos y contraseñas temporales (revisión de código)
+- **Zona horaria**: `App\Support\Consultorio::hoy()` y `::ahora()` dan la fecha y hora LOCALES del consultorio
+  (America/Mexico_City) aunque la app corra en UTC. Los usan `DisponibilidadService` (horas de hoy que ya
+  pasaron), las validaciones `after_or_equal` de las citas y los bloqueos, y los tableros. El chat ya usaba la
+  zona del consultorio por su cuenta (`DatosCita::hoy`)
+- **Traslapes**: `DisponibilidadService::espacioConBloqueo()` debe ser la PRIMERA consulta dentro de una
+  `DB::transaction`: bloquea (`FOR UPDATE`) los horarios de ese día de la semana, así quien agenda a la vez
+  hace fila y la segunda persona ve la cita de la primera. Lo usan el agendado del paciente,
+  `CitaManualService::crear/reagendar` y `AgendarCita` (chat). El índice único de `citas` solo detecta el
+  MISMO inicio; esto cubre servicios de distinta duración. Al reagendar, la cita que se mueve no cuenta como
+  ocupante (`$ignorarCitaId`). El `horario_id` siempre lo deriva el servidor
+- **Teléfonos**: `App\Support\Telefono` guarda siempre 10 dígitos (acepta espacios, guiones, paréntesis y lada
+  52/+52/521) y detecta repetidos aunque el viejo esté guardado con formato. Lo usan registro, Mi perfil, ficha
+  del paciente, Personal y alta de paciente en cita manual; el login acepta el teléfono con formato
+- **Contraseña temporal**: `users.debe_cambiar_password` (no asignable en masa) se activa al restablecer
+  contraseña, al dar de alta personal y al crear un paciente en cita manual. `CheckRole` manda a
+  `/cambiar-password` (`Auth\CambioPasswordController`, las tres clases de cuenta) hasta que la cambie; al
+  hacerlo se cierran las otras sesiones. Las cuentas existentes quedan en false
+- **Pruebas**: `CorreccionesMediaPrioridadTest`
+- Sigue pendiente (baja prioridad): paginar las listas de citas de doctora y asistente
+
 ## Pendiente técnico
 - `citas.horario_id` tiene `onDelete cascade`: eliminar un horario semanal
   borra sus citas. Cambiarlo a restrict/null o impedir borrar horarios con

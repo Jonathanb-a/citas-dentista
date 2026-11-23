@@ -40,7 +40,7 @@ class Bloqueo extends Model
     // Bloqueos que aún no terminan (hoy o futuros)
     public function scopeVigentes($query)
     {
-        return $query->whereDate('fecha_fin', '>=', Carbon::today()->toDateString());
+        return $query->whereDate('fecha_fin', '>=', \App\Support\Consultorio::hoy()->toDateString());
     }
 
     public function esDiaCompleto(): bool

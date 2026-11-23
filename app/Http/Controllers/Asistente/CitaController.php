@@ -12,6 +12,8 @@ use App\Services\CitaManualService;
 use App\Services\DisponibilidadService;
 use Illuminate\Http\Request;
 use Carbon\Carbon;
+use App\Support\Consultorio;
+use App\Support\Telefono;
 
 class CitaController extends Controller
 {
@@ -74,11 +76,11 @@ class CitaController extends Controller
             'nuevo_nombre' => 'required_if:tipo_paciente,nuevo|nullable|string|max:255',
             'nuevo_apellidos' => 'required_if:tipo_paciente,nuevo|nullable|string|max:255',
             'nuevo_email' => 'required_if:tipo_paciente,nuevo|nullable|email|unique:users,email',
-            'nuevo_telefono' => 'nullable|string|max:20|unique:users,telefono',
+            'nuevo_telefono' => Telefono::reglas(false, 'Ya existe un paciente con ese teléfono.'),
             'nuevo_sexo' => 'required_if:tipo_paciente,nuevo|nullable|in:masculino,femenino',
             'servicio_id' => 'required|exists:servicios,id',
             'horario_id' => 'required|exists:horarios,id',
-            'fecha' => 'required|date|after_or_equal:today',
+            'fecha' => 'required|date|after_or_equal:' . Consultorio::hoy()->toDateString(),
             'hora' => 'required|date_format:H:i',
             'status' => 'required|in:pendiente,confirmada',
             'motivo' => 'nullable|string|max:500',
@@ -111,7 +113,7 @@ class CitaController extends Controller
     public function disponibilidad(Request $request, DisponibilidadService $disponibilidad)
     {
         $request->validate([
-            'fecha' => 'required|date|after_or_equal:today',
+            'fecha' => 'required|date|after_or_equal:' . Consultorio::hoy()->toDateString(),
             'servicio_id' => 'required|exists:servicios,id',
         ]);
 
@@ -126,7 +128,7 @@ class CitaController extends Controller
     public function reagendar(Request $request, $id)
     {
         $request->validate([
-            'fecha' => 'required|date|after_or_equal:today',
+            'fecha' => 'required|date|after_or_equal:' . Consultorio::hoy()->toDateString(),
             'hora' => 'required|date_format:H:i',
             'horario_id' => 'required|exists:horarios,id',
         ], [

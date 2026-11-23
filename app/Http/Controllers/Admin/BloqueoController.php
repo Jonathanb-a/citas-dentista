@@ -7,6 +7,8 @@ use App\Models\Bloqueo;
 use App\Services\BloqueoService;
 use Illuminate\Http\Request;
 
+use App\Support\Consultorio;
+
 class BloqueoController extends Controller
 {
     protected $bloqueos;
@@ -31,7 +33,7 @@ class BloqueoController extends Controller
     {
         $request->validate([
             'tipo' => 'required|in:dia,rango,horas',
-            'fecha_inicio' => 'required|date|after_or_equal:today',
+            'fecha_inicio' => 'required|date|after_or_equal:' . Consultorio::hoy()->toDateString(),
             'fecha_fin' => 'required_if:tipo,rango|nullable|date|after_or_equal:fecha_inicio',
             'hora_inicio' => 'required_if:tipo,horas|nullable|date_format:H:i',
             'hora_fin' => 'required_if:tipo,horas|nullable|date_format:H:i|after:hora_inicio',

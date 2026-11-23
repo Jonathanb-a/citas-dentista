@@ -7,6 +7,7 @@ use App\Models\Expediente;
 use App\Models\Odontograma;
 use App\Models\User;
 use App\Services\PasswordTemporalService;
+use App\Support\Telefono;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
@@ -111,7 +112,7 @@ class PacienteController extends Controller
             'name' => 'required|string|max:255',
             'apellidos' => 'required|string|max:255',
             'email' => ['required', 'email', 'max:255', Rule::unique('users', 'email')->ignore($paciente->id)],
-            'telefono' => ['nullable', 'string', 'max:20', Rule::unique('users', 'telefono')->ignore($paciente->id)],
+            'telefono' => Telefono::reglas(false, 'Ya existe otro usuario con ese teléfono.', $paciente->id),
             // Opcional: en pacientes antiguos puede no tenerse el dato
             'sexo' => 'nullable|in:masculino,femenino',
         ], [
@@ -129,7 +130,7 @@ class PacienteController extends Controller
             'name' => $request->name,
             'apellidos' => $request->apellidos,
             'email' => $request->email,
-            'telefono' => $request->telefono,
+            'telefono' => Telefono::normalizar($request->telefono),
             'sexo' => $request->sexo,
         ]);
 

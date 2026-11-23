@@ -26,6 +26,11 @@ class CheckRole
             ]);
         }
 
+        // Contraseña temporal: hasta que la cambie solo puede ver la pantalla para cambiarla
+        if (auth()->user()->debe_cambiar_password && !$request->routeIs('password.cambiar*')) {
+            return redirect()->route('password.cambiar');
+        }
+
         if (!in_array(auth()->user()->role, $roles)) {
             abort(403, 'No tienes permiso para acceder a esta página.');
         }

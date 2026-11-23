@@ -564,9 +564,10 @@ class ChatAgendarTest extends ChatTestCase
 
             public function __construct(private int $horarioId) {}
 
-            public function espaciosDisponibles($fecha, $servicioId)
+            public function espaciosDisponibles($fecha, $servicioId, $ignorarCitaId = null)
             {
-                return $this->consultas++ === 0
+                // Libre al validar y al volver a comprobar dentro de la transacción: así lo que lo detiene es el índice único
+                return $this->consultas++ <= 1
                     ? [['hora' => '09:00', 'hora_formato' => '09:00 AM', 'horario_id' => $this->horarioId]]
                     : [];
             }

@@ -11,6 +11,8 @@ use App\Services\DisponibilidadService;
 use App\Services\TelegramService;
 use Illuminate\Http\Request;
 use Carbon\Carbon;
+use Illuminate\Support\Facades\DB;
+use App\Support\Consultorio;
 
 class CitaController extends Controller
 {
@@ -52,7 +54,7 @@ class CitaController extends Controller
     public function disponibilidad(Request $request)
     {
         $request->validate([
-            'fecha' => 'required|date|after_or_equal:today|before_or_equal:' . Carbon::today()->addMonths(3)->format('Y-m-d'),
+            'fecha' => 'required|date|after_or_equal:' . Consultorio::hoy()->toDateString() . '|before_or_equal:' . Consultorio::hoy()->addMonths(3)->toDateString(),
             'servicio_id' => 'required|exists:servicios,id',
         ]);
 
@@ -70,7 +72,7 @@ class CitaController extends Controller
         $request->validate([
             'servicio_id' => 'required|exists:servicios,id',
             'horario_id' => 'required|exists:horarios,id',
-            'fecha' => 'required|date|after_or_equal:today|before_or_equal:' . Carbon::today()->addMonths(3)->format('Y-m-d'),
+            'fecha' => 'required|date|after_or_equal:' . Consultorio::hoy()->toDateString() . '|before_or_equal:' . Consultorio::hoy()->addMonths(3)->toDateString(),
             'hora' => 'required|date_format:H:i',
             'motivo' => 'nullable|string|max:500',
         ], [
@@ -84,7 +86,7 @@ class CitaController extends Controller
         // Límite de citas activas por paciente (evita saturar la agenda)
         $citasActivas = Cita::where('paciente_id', auth()->id())
             ->whereIn('status', ['pendiente', 'confirmada'])
-            ->whereDate('fecha', '>=', Carbon::today())
+            ->whereDate('fecha', '>=', Consultorio::hoy())
             ->count();
 
         if ($citasActivas >= 3) {
@@ -93,49 +95,37 @@ class CitaController extends Controller
             )->withInput();
         }
 
-        // Verificar que el espacio siga disponible (evitar doble reserva)
-        $espacios = $this->disponibilidad->espaciosDisponibles(
-            $request->fecha,
-            $request->servicio_id
-        );
-
-        // El horario_id lo deriva el servidor del espacio libre: el del formulario no se usa
-        $espacio = collect($espacios)->firstWhere('hora', $request->hora);
-
-        if (!$espacio) {
-            return back()->withErrors([
-                'hora' => 'Lo sentimos, ese horario ya fue ocupado. Por favor elige otro.',
-            ])->withInput();
-        }
-
+        // Todo en una transacción que primero bloquea el día: dos personas que agendan a la vez hacen fila
+        // y la segunda ve la cita de la primera (el horario_id lo deriva el servidor del espacio libre)
         try {
-            // Crear la cita
-            $cita = Cita::create([
-                'paciente_id' => auth()->id(),
-                'servicio_id' => $request->servicio_id,
-                'horario_id' => $espacio['horario_id'],
-                'fecha' => $request->fecha,
-                'hora' => $request->hora,
-                'status' => 'pendiente',
-                'confirmado_por_paciente' => false,
-                'confirmacion_limite' => Carbon::now()->addHours(24),
-                'motivo' => $request->motivo,
-            ]);
+            $cita = DB::transaction(function () use ($request) {
+                $espacio = $this->disponibilidad->espacioConBloqueo($request->fecha, $request->servicio_id, $request->hora);
 
-            // Registrar en el historial
-            HistorialCita::create([
-                'cita_id' => $cita->id,
-                'user_id' => auth()->id(),
-                'accion' => 'creada',
-                'descripcion' => 'El paciente agendó la cita.',
-            ]);
+                if (!$espacio) {
+                    return null;
+                }
 
-            // Aviso a la clínica, ya con la cita guardada y después de responder al paciente
-            app(TelegramService::class)->enSegundoPlano(fn ($telegram) => $telegram->citaAgendada($cita));
+                $cita = Cita::create([
+                    'paciente_id' => auth()->id(),
+                    'servicio_id' => $request->servicio_id,
+                    'horario_id' => $espacio['horario_id'],
+                    'fecha' => $request->fecha,
+                    'hora' => $request->hora,
+                    'status' => 'pendiente',
+                    'confirmado_por_paciente' => false,
+                    'confirmacion_limite' => Carbon::now()->addHours(24),
+                    'motivo' => $request->motivo,
+                ]);
 
-            return redirect()->route('paciente.citas.index')
-                ->with('success', 'Tu cita fue agendada correctamente. Recibirás una confirmación pronto.');
+                HistorialCita::create([
+                    'cita_id' => $cita->id,
+                    'user_id' => auth()->id(),
+                    'accion' => 'creada',
+                    'descripcion' => 'El paciente agendó la cita.',
+                ]);
 
+                return $cita;
+            });
         } catch (\Illuminate\Database\QueryException $e) {
             // Solo un choque de horario (race condition) se avisa como tal; otro error de la base sigue su curso
             if (!Cita::esChoqueDeHorario($e)) {
@@ -146,6 +136,18 @@ class CitaController extends Controller
                 'hora' => 'Lo sentimos, alguien acaba de tomar ese horario. Por favor elige otro.',
             ])->withInput();
         }
+
+        if (!$cita) {
+            return back()->withErrors([
+                'hora' => 'Lo sentimos, ese horario ya fue ocupado. Por favor elige otro.',
+            ])->withInput();
+        }
+
+        // Aviso a la clínica, ya con la cita guardada y después de responder al paciente
+        app(TelegramService::class)->enSegundoPlano(fn ($telegram) => $telegram->citaAgendada($cita));
+
+        return redirect()->route('paciente.citas.index')
+            ->with('success', 'Tu cita fue agendada correctamente. Recibirás una confirmación pronto.');
     }
 
     // Cancelar cita

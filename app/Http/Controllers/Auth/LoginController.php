@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
+use App\Support\Telefono;
 use Illuminate\Support\Facades\Auth;
 
 class LoginController extends Controller
@@ -32,7 +33,14 @@ class LoginController extends Controller
             'password' => $request->password,
         ];
 
-        if (Auth::attempt($credenciales)) {
+        $entro = Auth::attempt($credenciales);
+
+        // Un teléfono escrito con espacios, guiones o lada se busca también como los 10 dígitos que se guardan
+        if (!$entro && $campo === 'telefono' && ($digitos = Telefono::normalizar($request->identificador)) !== null && $digitos !== $request->identificador) {
+            $entro = Auth::attempt(['telefono' => $digitos, 'password' => $request->password]);
+        }
+
+        if ($entro) {
             // Las cuentas desactivadas no pueden iniciar sesión
             if (!Auth::user()->activo) {
                 Auth::logout();
