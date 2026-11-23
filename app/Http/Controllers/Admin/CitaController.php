@@ -70,7 +70,8 @@ class CitaController extends Controller
     {
         $request->validate([
             'tipo_paciente' => 'required|in:existente,nuevo',
-            'paciente_id' => 'required_if:tipo_paciente,existente|nullable|exists:users,id',
+            'paciente_id' => ['required_if:tipo_paciente,existente', 'nullable',
+                \Illuminate\Validation\Rule::exists('users', 'id')->where(fn ($q) => $q->where('role', 'paciente')->where('activo', true))],
             'nuevo_nombre' => 'required_if:tipo_paciente,nuevo|nullable|string|max:255',
             'nuevo_apellidos' => 'required_if:tipo_paciente,nuevo|nullable|string|max:255',
             'nuevo_email' => 'required_if:tipo_paciente,nuevo|nullable|email|unique:users,email',
@@ -83,6 +84,7 @@ class CitaController extends Controller
             'status' => 'required|in:pendiente,confirmada',
             'motivo' => 'nullable|string|max:500',
         ], [
+            'paciente_id.exists' => 'Selecciona un paciente válido y activo.',
             'nuevo_email.unique' => 'Ya existe un paciente con ese correo.',
             'nuevo_telefono.unique' => 'Ya existe un paciente con ese teléfono.',
             'nuevo_sexo.required_if' => 'Selecciona el sexo del paciente.',

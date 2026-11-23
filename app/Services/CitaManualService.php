@@ -9,6 +9,7 @@ use App\Models\HistorialCita;
 use App\Services\DisponibilidadService;
 use App\Services\PasswordTemporalService;
 use App\Services\TelegramService;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Carbon\Carbon;
 
@@ -40,72 +41,81 @@ class CitaManualService
             return ['error' => 'Ese horario ya no está disponible. Por favor elige otro.'];
         }
 
-        // 1. Determinar el paciente
-        $panelPassword = null;
+        $espacio = collect($espacios)->firstWhere('hora', $datos['hora']);
 
-        if ($datos['tipo_paciente'] === 'nuevo') {
-            // Contraseña temporal aleatoria (única por paciente)
-            $passwordTemporal = $this->passwordTemporal->generar();
-
-            $paciente = new User();
-            $paciente->name = $datos['nuevo_nombre'];
-            $paciente->apellidos = $datos['nuevo_apellidos'];
-            $paciente->telefono = $datos['nuevo_telefono'] ?? null;
-            $paciente->email = $datos['nuevo_email'];
-            $paciente->sexo = $datos['nuevo_sexo'];
-            $paciente->password = Hash::make($passwordTemporal);
-            $paciente->role = 'paciente';   // asignado explícitamente, no por fillable
-            $paciente->activo = true;
-            $paciente->save();
-
-            // Crear su expediente vacío
-            Expediente::create(['paciente_id' => $paciente->id]);
-
-            $panelPassword = $this->passwordTemporal->panel($paciente, $passwordTemporal);
-            $pacienteId = $paciente->id;
-        } else {
-            // Usar paciente existente
-            $pacienteId = $datos['paciente_id'];
-        }
-
-        // 3. Calcular límite de confirmación si se crea como confirmada
-        // (un paciente del chat no puede confirmar por su cuenta: la clínica ya habló con él)
-        $confirmadoPorPaciente = $datos['tipo_paciente'] !== 'nuevo'
-            && $datos['status'] === 'confirmada'
-            && (bool) User::find($pacienteId)?->esDeChat();
-        $confirmacionLimite = null;
-        if ($datos['status'] === 'confirmada') {
-            $confirmacionLimite = Carbon::now()->addHours(24);
-        }
-
-        // 4. Crear la cita
+        // Todo en una transacción: si la cita no se puede guardar, tampoco queda el paciente nuevo ni su expediente
         try {
-            $cita = Cita::create([
-                'paciente_id' => $pacienteId,
-                'servicio_id' => $datos['servicio_id'],
-                'horario_id' => $datos['horario_id'],
-                'fecha' => $datos['fecha'],
-                'hora' => $datos['hora'],
-                'status' => $datos['status'],
-                'confirmado_por_paciente' => $confirmadoPorPaciente,
-                'confirmacion_limite' => $confirmacionLimite,
-                'motivo' => $datos['motivo'] ?? null,
-            ]);
+            return DB::transaction(function () use ($datos, $espacio, $creadoPor) {
+                // 1. Determinar el paciente
+                $panelPassword = null;
 
-            HistorialCita::create([
-                'cita_id' => $cita->id,
-                'user_id' => $creadoPor,
-                'accion' => 'creada',
-                'descripcion' => 'Cita creada manualmente por ' . auth()->user()->name . '.',
-            ]);
+                if ($datos['tipo_paciente'] === 'nuevo') {
+                    // Contraseña temporal aleatoria (única por paciente)
+                    $passwordTemporal = $this->passwordTemporal->generar();
 
-            return ['cita' => $cita, 'password_temporal' => $panelPassword];
+                    $paciente = new User();
+                    $paciente->name = $datos['nuevo_nombre'];
+                    $paciente->apellidos = $datos['nuevo_apellidos'];
+                    $paciente->telefono = $datos['nuevo_telefono'] ?? null;
+                    $paciente->email = $datos['nuevo_email'];
+                    $paciente->sexo = $datos['nuevo_sexo'];
+                    $paciente->password = Hash::make($passwordTemporal);
+                    $paciente->role = 'paciente';   // asignado explícitamente, no por fillable
+                    $paciente->activo = true;
+                    $paciente->save();
 
+                    // Crear su expediente vacío
+                    Expediente::create(['paciente_id' => $paciente->id]);
+
+                    $panelPassword = $this->passwordTemporal->panel($paciente, $passwordTemporal);
+                    $pacienteId = $paciente->id;
+                } else {
+                    // Usar paciente existente
+                    $pacienteId = $datos['paciente_id'];
+                }
+
+                // 3. Calcular límite de confirmación si se crea como confirmada
+                // (un paciente del chat no puede confirmar por su cuenta: la clínica ya habló con él)
+                $confirmadoPorPaciente = $datos['tipo_paciente'] !== 'nuevo'
+                    && $datos['status'] === 'confirmada'
+                    && (bool) User::find($pacienteId)?->esDeChat();
+                $confirmacionLimite = null;
+                if ($datos['status'] === 'confirmada') {
+                    $confirmacionLimite = Carbon::now()->addHours(24);
+                }
+
+                // 4. Crear la cita (el horario_id lo deriva el servidor del espacio libre)
+                $cita = Cita::create([
+                    'paciente_id' => $pacienteId,
+                    'servicio_id' => $datos['servicio_id'],
+                    'horario_id' => $espacio['horario_id'],
+                    'fecha' => $datos['fecha'],
+                    'hora' => $datos['hora'],
+                    'status' => $datos['status'],
+                    'confirmado_por_paciente' => $confirmadoPorPaciente,
+                    'confirmacion_limite' => $confirmacionLimite,
+                    'motivo' => $datos['motivo'] ?? null,
+                ]);
+
+                HistorialCita::create([
+                    'cita_id' => $cita->id,
+                    'user_id' => $creadoPor,
+                    'accion' => 'creada',
+                    'descripcion' => 'Cita creada manualmente por ' . auth()->user()->name . '.',
+                ]);
+
+                return ['cita' => $cita, 'password_temporal' => $panelPassword];
+            });
         } catch (\Illuminate\Database\QueryException $e) {
+            if (!Cita::esChoqueDeHorario($e)) {
+                throw $e;
+            }
+
             return ['error' => 'Ese horario acaba de ser ocupado. Por favor elige otro.'];
         }
     }
-/**
+
+    /**
      * Reagenda una cita existente a una nueva fecha y hora.
      */
     public function reagendar($citaId, array $datos, $reagendadoPor)
@@ -123,9 +133,9 @@ class CitaManualService
             $cita->servicio_id
         );
 
-        $horaDisponible = collect($espacios)->contains('hora', $datos['hora']);
+        $espacio = collect($espacios)->firstWhere('hora', $datos['hora']);
 
-        if (!$horaDisponible) {
+        if (!$espacio) {
             return ['error' => 'Ese horario no está disponible. Por favor elige otro.'];
         }
 
@@ -137,7 +147,7 @@ class CitaManualService
             $cita->update([
                 'fecha' => $datos['fecha'],
                 'hora' => $datos['hora'],
-                'horario_id' => $datos['horario_id'],
+                'horario_id' => $espacio['horario_id'],   // lo deriva el servidor, no el formulario
                 'status' => 'confirmada',
                 // Un paciente del chat no puede confirmar por su cuenta: reagendarla ya lo habló la clínica
                 'confirmado_por_paciente' => (bool) $cita->paciente?->esDeChat(),
@@ -157,6 +167,10 @@ class CitaManualService
             return ['cita' => $cita];
 
         } catch (\Illuminate\Database\QueryException $e) {
+            if (!Cita::esChoqueDeHorario($e)) {
+                throw $e;
+            }
+
             return ['error' => 'Ese horario acaba de ser ocupado. Por favor elige otro.'];
         }
     }

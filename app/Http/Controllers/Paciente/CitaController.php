@@ -99,9 +99,10 @@ class CitaController extends Controller
             $request->servicio_id
         );
 
-        $horaDisponible = collect($espacios)->contains('hora', $request->hora);
+        // El horario_id lo deriva el servidor del espacio libre: el del formulario no se usa
+        $espacio = collect($espacios)->firstWhere('hora', $request->hora);
 
-        if (!$horaDisponible) {
+        if (!$espacio) {
             return back()->withErrors([
                 'hora' => 'Lo sentimos, ese horario ya fue ocupado. Por favor elige otro.',
             ])->withInput();
@@ -112,7 +113,7 @@ class CitaController extends Controller
             $cita = Cita::create([
                 'paciente_id' => auth()->id(),
                 'servicio_id' => $request->servicio_id,
-                'horario_id' => $request->horario_id,
+                'horario_id' => $espacio['horario_id'],
                 'fecha' => $request->fecha,
                 'hora' => $request->hora,
                 'status' => 'pendiente',
@@ -136,7 +137,11 @@ class CitaController extends Controller
                 ->with('success', 'Tu cita fue agendada correctamente. Recibirás una confirmación pronto.');
 
         } catch (\Illuminate\Database\QueryException $e) {
-            // Si la base de datos rechaza por duplicado (race condition)
+            // Solo un choque de horario (race condition) se avisa como tal; otro error de la base sigue su curso
+            if (!Cita::esChoqueDeHorario($e)) {
+                throw $e;
+            }
+
             return back()->withErrors([
                 'hora' => 'Lo sentimos, alguien acaba de tomar ese horario. Por favor elige otro.',
             ])->withInput();

@@ -42,7 +42,7 @@ Route::post('/logout', [LoginController::class, 'logout'])->name('logout');
 
 // Registro
 Route::get('/register', [RegisterController::class, 'show'])->name('register');
-Route::post('/register', [RegisterController::class, 'register']);
+Route::post('/register', [RegisterController::class, 'register'])->middleware('throttle:10,1');
 
 // Recuperación de contraseña
 use App\Http\Controllers\Auth\PasswordResetController;

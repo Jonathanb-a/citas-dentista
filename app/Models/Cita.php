@@ -28,6 +28,15 @@ class Cita extends Model
         'confirmacion_limite' => 'datetime',
     ];
 
+    /**
+     * ¿El error de base de datos es una violación de restricción (p. ej. el índice único de fecha y hora)?
+     * Cualquier otro error de la base no debe disfrazarse de "horario ocupado".
+     */
+    public static function esChoqueDeHorario(\Illuminate\Database\QueryException $e): bool
+    {
+        return str_starts_with((string) $e->getCode(), '23');
+    }
+
     public function paciente()
     {
         return $this->belongsTo(User::class, 'paciente_id');
