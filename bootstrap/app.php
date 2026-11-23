@@ -13,11 +13,12 @@ return Application::configure(basePath: dirname(__DIR__))
     )
     ->withMiddleware(function (Middleware $middleware): void {
         // Railway pone un proxy delante (IPs dinámicas): se confía en todos para
-        // que Laravel lea X-Forwarded-Proto y valide los enlaces firmados con https
+        // que Laravel lea X-Forwarded-Proto y valide los enlaces firmados con https.
+        // NO se confía en X-Forwarded-Host: cualquiera podría mandarlo y los enlaces de los correos
+        // (recuperar contraseña, verificar correo) saldrían apuntando a un dominio ajeno
         $middleware->trustProxies(
             at: '*',
             headers: Request::HEADER_X_FORWARDED_FOR |
-                Request::HEADER_X_FORWARDED_HOST |
                 Request::HEADER_X_FORWARDED_PORT |
                 Request::HEADER_X_FORWARDED_PROTO |
                 Request::HEADER_X_FORWARDED_AWS_ELB
